@@ -1,6 +1,6 @@
 {
     "name": "kx/core",
-    "type": "project",
+    "type": "library",
     "description": "KalipsoX - Simple and powerful PHP framework.",
     "keywords": ["framework", "kalipso", "kalipsox", "php-framework", "core"],
     "license": "MIT",
