@@ -1,8 +1,8 @@
 <?php
 
 /**
- * @package KX\Core
- * @subpackage Exception
+ * @package KX
+ * @subpackage Core\Exception
  */
 
 declare(strict_types=1);
@@ -11,20 +11,13 @@ namespace KX\Core;
 
 use KX\Core\Helper;
 
-/**
- * Exception class
- *
- * @package KX
- * @subpackage Core\Exception
- */
-
 final class Exception
 {
 
 	/**
 	 *  Fatal error handler
 	 **/
-	public static function fatalHandler()
+	static function fatalHandler()
 	{
 
 		$error = error_get_last();
@@ -35,13 +28,8 @@ final class Exception
 
 	/**
 	 *  Error handler output
-	 * @param int $errNo
-	 * @param string $errMsg
-	 * @param string $file
-	 * @param int $line
-	 * @return void
 	 **/
-	public static function errorHandler($errNo, string $errMsg, string $file, int $line)
+	static function errorHandler($errNo, string $errMsg, string $file, int $line)
 	{
 
 		ob_get_clean();
@@ -66,7 +54,7 @@ final class Exception
 			]);
 		} else {
 
-			$handlerOutput = '
+			$handlerInterface = '
 			<!doctype html>
 			<html>
 				<head>
@@ -74,13 +62,13 @@ final class Exception
 					<title>Error Handler - KX</title>
 					<style>
 					body {
-						font-family: monospace;
+						font-family: "Courier New", monospace;
 						background: #151515;
 						color: #b9b9b9;
 						padding: 1rem;
 					}
 					pre {
-						font-family: monospace;
+						font-family: "Courier New", monospace;
 					}
 					h1 {
 						margin: 0;
@@ -100,7 +88,7 @@ final class Exception
 			</html>';
 
 			$errorOutput = '    ' . $output;
-			echo str_replace('[OUTPUT]', $errorOutput, $handlerOutput);
+			echo str_replace('[OUTPUT]', $errorOutput, $handlerInterface);
 		}
 		exit;
 	}

@@ -2,7 +2,7 @@
     "name": "kx/core",
     "version": "1.0.0",
     "type": "library",
-    "description": "KalipsoX - Simple and powerful PHP framework.",
+    "description": "KalipsoX Core - Hearth of KalipsoX Framework",
     "keywords": ["framework", "kalipso", "kalipsox", "php-framework", "core"],
     "license": "MIT",
     "authors": [
