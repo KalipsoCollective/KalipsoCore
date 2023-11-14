@@ -127,34 +127,41 @@ class Helper
 
 			$setting = explode('.', $setting, 2);
 
-			if (isset($configs[$setting[0]]) !== false) {
-
-				$settings = $configs[$setting[1]];
+			if ($setting[0] === 'env') {
+				$return = isset($_ENV['KX_' . $setting[1]]) !== false ?
+					$_ENV['KX_' . $setting[1]] :
+					null;
 			} else {
 
-				$file = self::path('app/Config/' . $setting[0] . '.php');
-				if (file_exists($file)) {
+				if (isset($configs[$setting[0]]) !== false) {
 
-					$settings = require $file;
-					$configs[$setting[1]] = $settings;
-				}
-			}
+					$settings = $configs[$setting[1]];
+				} else {
 
-			if ($settings) {
+					$file = self::path('app/Config/' . $setting[0] . '.php');
+					if (file_exists($file)) {
 
-				$setting = strpos($setting[1], '.') !== false ? explode('.', $setting[1]) : [$setting[1]];
-
-				$data = null;
-				foreach ($setting as $key) {
-
-					if (isset($settings[$key]) !== false) {
-						$data = $settings[$key];
-						$settings = $settings[$key];
-					} else {
-						$data = null;
+						$settings = require $file;
+						$configs[$setting[1]] = $settings;
 					}
 				}
-				$return = $data;
+
+				if ($settings) {
+
+					$setting = strpos($setting[1], '.') !== false ? explode('.', $setting[1]) : [$setting[1]];
+
+					$data = null;
+					foreach ($setting as $key) {
+
+						if (isset($settings[$key]) !== false) {
+							$data = $settings[$key];
+							$settings = $settings[$key];
+						} else {
+							$data = null;
+						}
+					}
+					$return = $data;
+				}
 			}
 		}
 
@@ -1265,5 +1272,54 @@ class Helper
 			}
 		}
 		return $result;
+	}
+
+	/**
+	 * Load .env file
+	 * @return void
+	 */
+	public static function loadConfig()
+	{
+		global $configs;
+
+		$path = self::path('.env');
+		if (file_exists($path)) {
+
+			$envContent = file_get_contents($path);
+			// regular expression to match each line
+			$pattern = '/^\s*([\w.-]+)\s*=\s*(.*?)\s*(?:(?=#)|$)/m';
+
+			// find all matches
+			preg_match_all(
+				$pattern,
+				$envContent,
+				$matches,
+				PREG_SET_ORDER
+			);
+
+			$envArray = [];
+
+			foreach ($matches as $match) {
+				$envArray[$match[1]] = trim($match[2], "\" \t\n\r\0\x0B");
+			}
+
+			// set environment variables
+			foreach ($envArray as $key => $value) {
+				$_ENV['KX_' . $key] = $value;
+			}
+		}
+
+		// config folder
+		$configs = [];
+		$configPath = self::path('Config');
+		if (file_exists($configPath)) {
+
+			$files = array_diff(scandir($configPath), ['.', '..']);
+			foreach ($files as $file) {
+
+				$fileName = explode('.', $file)[0];
+				$configs[$fileName] = require_once $configPath . '/' . $file;
+			}
+		}
 	}
 }

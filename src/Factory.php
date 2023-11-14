@@ -73,6 +73,25 @@ final class Factory
 		});
 
 		/**
+		 * Load config
+		 */
+		Helper::loadConfig();
+
+		if (Helper::config('env.DEV_MODE')) {
+			/**
+			 * Debug mode
+			 **/
+			ini_set('display_errors', 'on');
+			error_reporting(E_ALL);
+		} else {
+			/**
+			 * Production mode
+			 **/
+			ini_set('display_errors', 'off');
+			error_reporting(0);
+		}
+
+		/**
 		 * php.ini set and error reporting setting
 		 **/
 		ini_set('display_errors', 'on');
