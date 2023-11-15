@@ -46,6 +46,11 @@ final class Factory
 	{
 
 		/**
+		 * Output buffer start
+		 **/
+		ob_start();
+
+		/**
 		 * Shutdown function registration
 		 **/
 		register_shutdown_function(function () {
@@ -77,7 +82,7 @@ final class Factory
 		 */
 		Helper::loadConfig();
 
-		if (Helper::config('env.DEV_MODE')) {
+		if (Helper::config('DEV_MODE')) {
 			/**
 			 * Debug mode
 			 **/
@@ -91,11 +96,43 @@ final class Factory
 			error_reporting(0);
 		}
 
+		if ($timezone = Helper::config('TIMEZONE')) {
+			/**
+			 * Timezone setting
+			 **/
+			date_default_timezone_set((string) $timezone);
+		}
+
 		/**
-		 * php.ini set and error reporting setting
+		 * Auth strategy
 		 **/
-		ini_set('display_errors', 'on');
-		error_reporting(E_ALL);
+		if (Helper::config('AUTH_STRATEGY') === 'session') {
+
+			/**
+			 * Set session name
+			 **/
+			$sessionName = Helper::config('SESSION_NAME');
+			if (!empty($sessionName)) {
+				session_name((string) $sessionName);
+			}
+			session_start();
+		} else {
+			/**
+			 * Set JWT secret
+			 **/
+			$jwtSecret = Helper::config('JWT_SECRET');
+			if (!empty($jwtSecret)) {
+				Helper::setJWTSecret((string) $jwtSecret);
+			}
+		}
+
+		/**
+		 * Set default language
+		 **/
+		$defaultLang = Helper::config('DEFAULT_LANGUAGE');
+		if (!empty($defaultLang)) {
+			Helper::setLang((string) $defaultLang);
+		}
 
 		return $this;
 	}

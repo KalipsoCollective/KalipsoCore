@@ -112,60 +112,85 @@ class Helper
 
 	/**
 	 * Configuration Parameters
-	 * @param  string $setting setting value name
-	 * @return string|null|array|object $return  setting value
+	 * @param  string 	$setting setting value name
+	 * @param  boolean 	$format  return as formatted
+	 * @return any    	$return  setting value
 	 */
-	public static function config($setting)
+	public static function config($setting, $format = false)
 	{
 
-		global $configs;
+		global $kxConfigs;
 
 		$return = false;
 		$settings = false;
+		$setting = trim($setting, '.');
 
 		if (strpos($setting, '.') !== false) {
 
 			$setting = explode('.', $setting, 2);
 
-			if ($setting[0] === 'env') {
-				$return = isset($_ENV['KX_' . $setting[1]]) !== false ?
-					$_ENV['KX_' . $setting[1]] :
-					null;
+			// config files
+			if (isset($configs[$setting[0]]) !== false) {
+
+				$settings = $configs[$setting[1]];
 			} else {
 
-				if (isset($configs[$setting[0]]) !== false) {
+				$file = self::path('app/Config/' . $setting[0] . '.php');
+				if (file_exists($file)) {
 
-					$settings = $configs[$setting[1]];
-				} else {
+					$settings = require $file;
+					$configs[$setting[1]] = $settings;
+				}
+			}
 
-					$file = self::path('app/Config/' . $setting[0] . '.php');
-					if (file_exists($file)) {
+			if ($settings) {
 
-						$settings = require $file;
-						$configs[$setting[1]] = $settings;
+				$setting = strpos($setting[1], '.') !== false ? explode('.', $setting[1]) : [$setting[1]];
+
+				$data = null;
+				foreach ($setting as $key) {
+
+					if (isset($settings[$key]) !== false) {
+						$data = $settings[$key];
+						$settings = $settings[$key];
+					} else {
+						$data = null;
 					}
 				}
+				$return = $data;
+			}
+		} else {
+			// environment variables
+			$return = isset($_ENV['KX_' . $setting]) !== false ?
+				$_ENV['KX_' . $setting] :
+				null;
+		}
 
-				if ($settings) {
+		$return =
+			is_string($return) ? html_entity_decode($return) : $return;
 
-					$setting = strpos($setting[1], '.') !== false ? explode('.', $setting[1]) : [$setting[1]];
+		if ($format) {
+			switch ($return) {
+				case "true":
+					$return = true;
+					break;
 
-					$data = null;
-					foreach ($setting as $key) {
+				case "false":
+					$return = false;
+					break;
 
-						if (isset($settings[$key]) !== false) {
-							$data = $settings[$key];
-							$settings = $settings[$key];
-						} else {
-							$data = null;
-						}
+				case "null":
+					$return = null;
+					break;
+
+				default:
+					if (is_numeric($return)) {
+						$return = (float) $return;
 					}
-					$return = $data;
-				}
 			}
 		}
 
-		return is_string($return) ? html_entity_decode($return) : $return;
+		return $return;
 	}
 
 	/**
@@ -497,11 +522,11 @@ class Helper
 	public static function lang(string $key): string
 	{
 
-		global $languageFile;
+		global $kxLangParameters;
 
 		$key = strpos($key, '.') !== false ? explode('.', $key) : [$key];
 
-		$terms = $languageFile;
+		$terms = $kxLangParameters;
 		foreach ($key as $index) {
 			if (isset($terms[$index]) !== false) {
 				$terms = $terms[$index];
@@ -624,25 +649,13 @@ class Helper
 	public static function currentPage($route = null)
 	{
 
-		global $requestUri;
+		global $kxRequestUri;
 
-		if (is_null($route) and $requestUri == '') {
+		if (is_null($route) and $kxRequestUri == '') {
 			return ' active';
-		} elseif (!is_null($route) and trim($route, '/') == $requestUri) {
+		} elseif (!is_null($route) and trim($route, '/') == $kxRequestUri) {
 			return ' active';
 		}
-	}
-
-	/**
-	 * Session Starter
-	 * Assign to session name and start session
-	 * @return void
-	 */
-	public static function sessionStart()
-	{
-
-		session_name(KX_SESSION_NAME);
-		session_start();
 	}
 
 	/**
@@ -1040,7 +1053,7 @@ class Helper
 
 		$ciphering = "AES-128-CTR";
 		$encryptionIv = '1234567891011121';
-		$encryptionKey = md5(self::config('app.name'));
+		$encryptionKey = md5((string) self::config('app.name'));
 		$text = openssl_encrypt((string)$text, $ciphering, $encryptionKey, 0, $encryptionIv);
 		return bin2hex($text);
 	}
@@ -1056,7 +1069,7 @@ class Helper
 
 		$ciphering = "AES-128-CTR";
 		$decryptionIv = '1234567891011121';
-		$decryptionKey = md5(self::config('app.name'));
+		$decryptionKey = md5((string) self::config('app.name'));
 		return openssl_decrypt(hex2bin($encryptedString), $ciphering, $decryptionKey, 0, $decryptionIv);
 	}
 
@@ -1280,7 +1293,7 @@ class Helper
 	 */
 	public static function loadConfig()
 	{
-		global $configs;
+		global $kxConfigs;
 
 		$path = self::path('.env');
 		if (file_exists($path)) {
@@ -1310,7 +1323,7 @@ class Helper
 		}
 
 		// config folder
-		$configs = [];
+		$kxConfigs = [];
 		$configPath = self::path('Config');
 		if (file_exists($configPath)) {
 
@@ -1318,8 +1331,34 @@ class Helper
 			foreach ($files as $file) {
 
 				$fileName = explode('.', $file)[0];
-				$configs[$fileName] = require_once $configPath . '/' . $file;
+				$kxConfigs[$fileName] = require_once $configPath . '/' . $file;
 			}
 		}
+	}
+
+	/**
+	 * Set JWT Secret
+	 * @param string $secret
+	 * @return void
+	 */
+	public static function setJWTSecret($secret)
+	{
+		global $kxJwtSecret;
+		$kxJwtSecret = $secret;
+	}
+
+	/**
+	 * Set Language
+	 * @param string $lang
+	 * @return void
+	 */
+	public static function setLang($langKey)
+	{
+		global $kxLangParameters, $kxLang;
+
+		if (file_exists(self::path('app/Localization/' . $langKey . '.php')) !== false) {
+			$kxLangParameters = require_once self::path('app/Localization/' . $langKey . '.php');
+		}
+		$kxLang = $langKey;
 	}
 }
