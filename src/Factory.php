@@ -23,10 +23,11 @@ final class Factory
 {
 
 	protected $routes = [];
+	protected $methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'];
 
 	/**
 	 * Constructor
-	 * @return void
+	 * @return object
 	 */
 	public function __construct()
 	{
@@ -36,13 +37,15 @@ final class Factory
 		define('KX_START', microtime(true)); // We can use it for the execution time recorded in the log.
 		define('KX_ROOT',  rtrim($_SERVER["DOCUMENT_ROOT"], '/') . '/');
 		define('KX_CORE_VERSION', '0.0.1');
+
+		return $this;
 	}
 
 	/**
 	 * Factory constructor
-	 * @return void
+	 * @return object
 	 */
-	public function setup()
+	public function setup(): object
 	{
 
 		/**
@@ -139,20 +142,104 @@ final class Factory
 
 	/**
 	 * Add route
-	 * @param string $method
+	 * @param string|array $method
 	 * @param string $path
-	 * @param string $controller
-	 * @param array $middlewares
-	 * @return void
+	 * @param callable|string $controller
+	 * @param callable|array|string $middlewares
+	 * @return object
 	 */
-	public function route(string $method, string $path, string $controller, array $middlewares = [])
+	public function route(string|array $method, string $path, callable|string $controller, callable|array|string $middlewares = []): object
 	{
-		$this->routes[] = [
-			'method' => $method,
-			'path' => $path,
-			'controller' => $controller,
-			'middlewares' => $middlewares
-		];
+		if (is_array($method)) {
+			foreach ($method as $m) {
+				$this->route($m, $path, $controller, $middlewares);
+			}
+			return $this;
+		} else {
+
+			if (is_string($middlewares)) {
+				$middlewares = [$middlewares];
+			}
+			$middlewares = array_unique(
+				$middlewares
+			);
+
+			if (empty($middlewares)) {
+				$middlewares = null;
+			}
+
+			if (is_string($method)) {
+				$method = [$method];
+			}
+
+			foreach ($method as $m) {
+				if (!in_array($m, $this->methods)) {
+					throw new \Exception('Invalid method: ' . $m);
+				}
+				$path = '/' . trim($path, '/');
+				if (isset($this->routes[$path]) === false) {
+					$this->routes[$path] = [];
+				}
+				$this->routes[$path][$m] = [
+					'controller' => $controller,
+					'middlewares' => $middlewares
+				];
+			}
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Add route group
+	 * @param array $mainRoute
+	 * @param array $subRoutes
+	 * @return object
+	 */
+	public function routeGroup(array $mainRoute, array $subRoutes): object
+	{
+
+		// add main route
+		$this->route(
+			...$mainRoute
+		);
+
+		foreach ($subRoutes as $subRoute) {
+
+			$subMiddlewares = isset($subRoute[3]) !== false ? $subRoute[3] : [];
+			if (isset($mainRoute[3]) !== false) {
+				$subMiddlewares = array_merge($subMiddlewares, $subMiddlewares);
+			}
+
+			$subRoute[1] = $mainRoute[1] . '/' . trim($subRoute[1], '/');
+			$subRoute = [
+				$subRoute[0],
+				$subRoute[1],
+				$subRoute[2],
+				$subMiddlewares
+			];
+
+			// add sub route
+			$this->route(
+				...$subRoute
+			);
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Add route from an array
+	 * @param array $routes
+	 * @return object
+	 */
+	public function routes(array $routes): object
+	{
+		foreach ($routes as $route) {
+			$this->route(
+				...$route
+			);
+		}
 
 		return $this;
 	}
@@ -163,6 +250,11 @@ final class Factory
 	 */
 	public function run()
 	{
+
+		echo '<pre>';
+		var_dump($this->routes);
+		echo '</pre>';
+		exit;
 		echo KX_ROOT;
 	}
 }

@@ -48,7 +48,7 @@ final class Exception
 		ob_start();
 
 		$output = '';
-		if (Helper::config('app.dev_mode')) {
+		if (Helper::config('DEV_MODE', true)) {
 			$output .= $file . ':' . $line . ' - ';
 		}
 		$output .= $errMsg;
