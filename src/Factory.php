@@ -11,19 +11,14 @@ namespace KX\Core;
 
 use KX\Core\Helper;
 use KX\Core\Exception;
-
-/**
- * Factory class
- *
- * @package KX
- * @subpackage Core\Factory
- */
+use KX\Core\Request;
+use KX\Core\Response;
 
 final class Factory
 {
-
-	protected $routes = [];
-	protected $methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'];
+	protected $router;
+	protected $request;
+	protected $response;
 
 	/**
 	 * Constructor
@@ -137,6 +132,13 @@ final class Factory
 			Helper::setLang((string) $defaultLang);
 		}
 
+		/**
+		 * Set Request and Response
+		 */
+		$this->request = new Request();
+		$this->response = new Response();
+		$this->router = new Router();
+
 		return $this;
 	}
 
@@ -148,44 +150,19 @@ final class Factory
 	 * @param callable|array|string $middlewares
 	 * @return object
 	 */
-	public function route(string|array $method, string $path, callable|string $controller, callable|array|string $middlewares = []): object
-	{
-		if (is_array($method)) {
-			foreach ($method as $m) {
-				$this->route($m, $path, $controller, $middlewares);
-			}
-			return $this;
-		} else {
+	public function route(
+		string|array $method,
+		string $path,
+		callable|string $controller = null,
+		callable|array|string $middlewares = []
+	): object {
 
-			if (is_string($middlewares)) {
-				$middlewares = [$middlewares];
-			}
-			$middlewares = array_unique(
-				$middlewares
-			);
-
-			if (empty($middlewares)) {
-				$middlewares = null;
-			}
-
-			if (is_string($method)) {
-				$method = [$method];
-			}
-
-			foreach ($method as $m) {
-				if (!in_array($m, $this->methods)) {
-					throw new \Exception('Invalid method: ' . $m);
-				}
-				$path = '/' . trim($path, '/');
-				if (isset($this->routes[$path]) === false) {
-					$this->routes[$path] = [];
-				}
-				$this->routes[$path][$m] = [
-					'controller' => $controller,
-					'middlewares' => $middlewares
-				];
-			}
-		}
+		$this->router->addRoute(
+			$method,
+			$path,
+			$controller,
+			$middlewares
+		);
 
 		return $this;
 	}
@@ -252,7 +229,7 @@ final class Factory
 	{
 
 		echo '<pre>';
-		var_dump($this->routes);
+		var_dump($this->router->getRoutes());
 		echo '</pre>';
 		exit;
 		echo KX_ROOT;
