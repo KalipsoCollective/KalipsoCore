@@ -132,7 +132,7 @@ class Helper
 			// config files
 			if (isset($configs[$setting[0]]) !== false) {
 
-				$settings = $configs[$setting[1]];
+				$settings = $kxConfigs[$setting[1]];
 			} else {
 
 				$file = self::path('app/Config/' . $setting[0] . '.php');
