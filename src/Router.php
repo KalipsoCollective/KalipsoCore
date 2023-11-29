@@ -19,6 +19,9 @@ final class Router
   private $excludedRoutes = [];
   private $methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'];
   private $endpoint = '';
+  private $route = null;
+  private $routeDetails = null;
+  private $method = null;
 
   /**
    * Router constructor
@@ -26,7 +29,16 @@ final class Router
    */
   public function __construct()
   {
-    $this->endpoint = $_SERVER['REQUEST_URI'];
+
+    $url = parse_url($_SERVER['REQUEST_URI']);
+    $this->endpoint = '/' . trim(
+      $url['path'] === '/' ? $url['path'] : rtrim($url['path'], '/'),
+      '/'
+    );
+    $this->method = strtoupper(
+      empty($_SERVER['REQUEST_METHOD']) ? 'GET' : $_SERVER['REQUEST_METHOD']
+    );
+
     return $this;
   }
 
@@ -96,5 +108,57 @@ final class Router
   public function getRoutes(): array
   {
     return $this->routes;
+  }
+
+  /**
+   * Get method
+   * @return string
+   */
+  public function getMethod(): string
+  {
+    return $this->method;
+  }
+
+  /**
+   * Get endpoint
+   * @return string|null
+   */
+  public function getRoute(): string|null
+  {
+    return $this->route;
+  }
+
+  /**
+   * Get route details
+   * @return array|null
+   */
+  public function getRouteDetails(): array|null
+  {
+    return $this->routeDetails;
+  }
+
+  /** 
+   * Run router
+   * @return object
+   */
+  public function run(): object
+  {
+
+    $this->route = null;
+
+
+
+    if (isset($this->routes[$this->endpoint]) === false) {
+      throw new \Exception('Route not found: ' . $this->endpoint, 404);
+    }
+
+    if (isset($this->routes[$this->endpoint][$this->method]) === false) {
+      throw new \Exception('Method not allowed: ' . $this->method, 405);
+    }
+
+    $this->route = $this->endpoint;
+    $this->routeDetails = $this->routes[$this->endpoint][$this->method];
+
+    return $this;
   }
 }
