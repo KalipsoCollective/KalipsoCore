@@ -16,222 +16,249 @@ use KX\Core\Response;
 
 final class Factory
 {
-	protected $router;
-	protected $request;
-	protected $response;
+    protected $router;
+    protected $request;
+    protected $response;
 
-	/**
-	 * Constructor
-	 * @return object
-	 */
-	public function __construct()
-	{
-		/**
-		 * Basic constants
-		 **/
-		define('KX_START', microtime(true)); // We can use it for the execution time recorded in the log.
-		define('KX_ROOT',  rtrim($_SERVER["DOCUMENT_ROOT"], '/') . '/');
-		define('KX_CORE_VERSION', '0.0.1');
+    /**
+     * Constructor
+     * @return object
+     */
+    public function __construct()
+    {
+        /**
+         * Basic constants
+         **/
+        define('KX_START', microtime(true)); // We can use it for the execution time recorded in the log.
+        define('KX_ROOT',  rtrim($_SERVER["DOCUMENT_ROOT"], '/') . '/');
+        define('KX_CORE_VERSION', '0.0.1');
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Factory constructor
-	 * @return object
-	 */
-	public function setup(): object
-	{
+    /**
+     * Factory constructor
+     * @return object
+     */
+    public function setup(): object
+    {
 
-		/**
-		 * Output buffer start
-		 **/
-		ob_start();
+        /**
+         * Output buffer start
+         **/
+        ob_start();
 
-		/**
-		 * Shutdown function registration
-		 **/
-		register_shutdown_function(function () {
-			Exception::fatalHandler();
-		});
+        /**
+         * Shutdown function registration
+         **/
+        register_shutdown_function(function () {
+            Exception::fatalHandler();
+        });
 
-		/**
-		 * Error handler set
-		 **/
-		set_error_handler(
-			function ($level, $error, $file, $line) {
-				if (0 === error_reporting()) {
-					return false;
-				}
-				Exception::errorHandler($level, $error, $file, $line);
-			},
-			E_ALL
-		);
+        /**
+         * Error handler set
+         **/
+        set_error_handler(
+            function ($level, $error, $file, $line) {
+                if (0 === error_reporting()) {
+                    return false;
+                }
+                Exception::errorHandler($level, $error, $file, $line);
+            },
+            E_ALL
+        );
 
-		/**
-		 * Exception handler set
-		 **/
-		set_exception_handler(function ($e) {
-			Exception::exceptionHandler($e);
-		});
+        /**
+         * Exception handler set
+         **/
+        set_exception_handler(function ($e) {
+            Exception::exceptionHandler($e);
+        });
 
-		/**
-		 * Load config
-		 */
-		Helper::loadConfig();
+        /**
+         * Load config
+         */
+        Helper::loadConfig();
 
-		if (Helper::config('DEV_MODE')) {
-			/**
-			 * Debug mode
-			 **/
-			ini_set('display_errors', 'on');
-			error_reporting(E_ALL);
-		} else {
-			/**
-			 * Production mode
-			 **/
-			ini_set('display_errors', 'off');
-			error_reporting(0);
-		}
+        if (Helper::config('DEV_MODE')) {
+            /**
+             * Debug mode
+             **/
+            ini_set('display_errors', 'on');
+            error_reporting(E_ALL);
+        } else {
+            /**
+             * Production mode
+             **/
+            ini_set('display_errors', 'off');
+            error_reporting(0);
+        }
 
-		if ($timezone = Helper::config('TIMEZONE')) {
-			/**
-			 * Timezone setting
-			 **/
-			date_default_timezone_set((string) $timezone);
-		}
+        if ($timezone = Helper::config('TIMEZONE')) {
+            /**
+             * Timezone setting
+             **/
+            date_default_timezone_set((string) $timezone);
+        }
 
-		/**
-		 * Auth strategy
-		 **/
-		if (Helper::config('AUTH_STRATEGY') === 'session') {
+        /**
+         * Auth strategy
+         **/
+        if (Helper::config('AUTH_STRATEGY') === 'session') {
 
-			/**
-			 * Set session name
-			 **/
-			$sessionName = Helper::config('SESSION_NAME');
-			if (!empty($sessionName)) {
-				session_name((string) $sessionName);
-			}
-			session_start();
-		} else {
-			/**
-			 * Set JWT secret
-			 **/
-			$jwtSecret = Helper::config('JWT_SECRET');
-			if (!empty($jwtSecret)) {
-				Helper::setJWTSecret((string) $jwtSecret);
-			}
-		}
+            /**
+             * Set session name
+             **/
+            $sessionName = Helper::config('SESSION_NAME');
+            if (!empty($sessionName)) {
+                session_name((string) $sessionName);
+            }
+            session_start();
+        } else {
+            /**
+             * Set JWT secret
+             **/
+            $jwtSecret = Helper::config('JWT_SECRET');
+            if (!empty($jwtSecret)) {
+                Helper::setJWTSecret((string) $jwtSecret);
+            }
+        }
 
-		/**
-		 * Set default language
-		 **/
-		$defaultLang = Helper::config('DEFAULT_LANGUAGE');
-		if (!empty($defaultLang)) {
-			Helper::setLang((string) $defaultLang);
-		}
+        /**
+         * Set default language
+         **/
+        $defaultLang = Helper::config('DEFAULT_LANGUAGE');
+        if (!empty($defaultLang)) {
+            Helper::setLang((string) $defaultLang);
+        }
 
-		/**
-		 * Set Request and Response
-		 */
-		$this->request = new Request();
-		$this->response = new Response();
-		$this->router = new Router();
+        /**
+         * Set Request and Response
+         */
+        $this->request = new Request();
+        $this->response = new Response();
+        $this->router = new Router();
 
-		return $this;
-	}
+        /**
+         * Set powered by
+         **/
+        if (!Helper::config('VISIBLE_POWERED_BY', true)) {
+            $this->response->setHeader('X-Powered-By: KalipsoCore ' . KX_CORE_VERSION);
+        }
 
-	/**
-	 * Add route
-	 * @param string|array $method
-	 * @param string $path
-	 * @param callable|string $controller
-	 * @param callable|array|string $middlewares
-	 * @return object
-	 */
-	public function route(
-		string|array $method,
-		string $path,
-		callable|string $controller = null,
-		callable|array|string $middlewares = []
-	): object {
+        return $this;
+    }
 
-		$this->router->addRoute(
-			$method,
-			$path,
-			$controller,
-			$middlewares
-		);
+    /**
+     * Add route
+     * @param string|array $method
+     * @param string $path
+     * @param callable|string $controller
+     * @param callable|array|string $middlewares
+     * @return object
+     */
+    public function route(
+        string|array $method,
+        string $path,
+        callable|string $controller = null,
+        callable|array|string $middlewares = []
+    ): object {
 
-		return $this;
-	}
+        $this->router->addRoute(
+            $method,
+            $path,
+            $controller,
+            $middlewares
+        );
 
-	/**
-	 * Add route group
-	 * @param array $mainRoute
-	 * @param array $subRoutes
-	 * @return object
-	 */
-	public function routeGroup(array $mainRoute, array $subRoutes): object
-	{
+        return $this;
+    }
 
-		// add main route
-		$this->route(
-			...$mainRoute
-		);
+    /**
+     * Add route group
+     * @param array $mainRoute
+     * @param array $subRoutes
+     * @return object
+     */
+    public function routeGroup(array $mainRoute, array $subRoutes): object
+    {
 
-		foreach ($subRoutes as $subRoute) {
+        // add main route
+        $this->route(
+            ...$mainRoute
+        );
 
-			$subMiddlewares = isset($subRoute[3]) !== false ? $subRoute[3] : [];
-			if (isset($mainRoute[3]) !== false) {
-				$subMiddlewares = array_merge($subMiddlewares, $subMiddlewares);
-			}
+        foreach ($subRoutes as $subRoute) {
 
-			$subRoute[1] = $mainRoute[1] . '/' . trim($subRoute[1], '/');
-			$subRoute = [
-				$subRoute[0],
-				$subRoute[1],
-				$subRoute[2],
-				$subMiddlewares
-			];
+            $subMiddlewares = isset($subRoute[3]) !== false ? $subRoute[3] : [];
+            if (isset($mainRoute[3]) !== false) {
+                $subMiddlewares = array_merge($subMiddlewares, $subMiddlewares);
+            }
 
-			// add sub route
-			$this->route(
-				...$subRoute
-			);
-		}
+            $subRoute[1] = $mainRoute[1] . '/' . trim($subRoute[1], '/');
+            $subRoute = [
+                $subRoute[0],
+                $subRoute[1],
+                $subRoute[2],
+                $subMiddlewares
+            ];
 
-		return $this;
-	}
+            // add sub route
+            $this->route(
+                ...$subRoute
+            );
+        }
 
-	/**
-	 * Add route from an array
-	 * @param array $routes
-	 * @return object
-	 */
-	public function routes(array $routes): object
-	{
-		foreach ($routes as $route) {
-			$this->route(
-				...$route
-			);
-		}
+        return $this;
+    }
 
-		return $this;
-	}
+    /**
+     * Add route from an array
+     * @param array $routes
+     * @return object
+     */
+    public function routes(array $routes): object
+    {
+        foreach ($routes as $route) {
+            $this->route(
+                ...$route
+            );
+        }
 
-	/**
-	 * Run the application
-	 * @return void
-	 */
-	public function run()
-	{
+        return $this;
+    }
 
-		echo '<pre>';
-		var_dump($this->router->getRoutes());
-		echo '</pre>';
-		exit;
-		echo KX_ROOT;
-	}
+    /**
+     * Run the application
+     * @return void
+     */
+    public function run()
+    {
+        // detect route
+        $this->router->run();
+
+        // set http status code
+        $this->response->setStatusCode(200);
+
+        // apply headers
+        $this->response->applyHeaders();
+
+
+        echo '<pre>';
+        var_dump($this->router->getRoute());
+        echo '</pre>';
+        exit;
+        echo KX_ROOT;
+    }
+
+    /**
+     * Set error handler
+     * @param callable $handler
+     * @return object
+     */
+    public function setCustomErrorHandler($handler): object
+    {
+        Exception::setErrorHandler($this->request, $this->response, $handler);
+        return $this;
+    }
 }
