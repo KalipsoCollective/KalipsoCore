@@ -69,7 +69,7 @@ class Helper
 	public static function base($body = null)
 	{
 
-		$url = (self::config('settings.ssl') ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . '/';
+		$url = (self::config('SSL', true) ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . '/';
 		if ($body) $url .= trim(strip_tags($body), '/');
 		return $url;
 	}
@@ -429,92 +429,6 @@ class Helper
 	}
 
 	/**
-	 * User Alert Generator
-	 * @param array $alerts alert arguments
-	 * @return string    
-	 */
-	public static function alert(array $alerts = [])
-	{
-
-		/**
-		 *   types:
-		 *   - default
-		 *   - success
-		 *   - warning
-		 *   - error
-		 **/
-
-		$alert = '';
-		foreach ($alerts as $a) {
-
-			switch ($a['status']) {
-				case 'error':
-					$a['status'] = 'danger';
-					break;
-
-				case 'default':
-					$a['status'] = 'dark';
-					break;
-			}
-
-			$alert .= '<div class="alert alert-' . $a['status'] . '">' . $a['message'] . '</div>';
-		}
-
-		return $alert;
-	}
-
-	/**
-	 * Stored User Alert Generator
-	 * @param array externalAlerts  external alerts together session stored alerts
-	 * @return string    
-	 */
-	public static function sessionStoredAlert($externalAlerts = [])
-	{
-
-		$alerts = is_array($externalAlerts) ? $externalAlerts : [];
-
-		if (isset($_SESSION['alerts']) !== false and is_array($_SESSION['alerts']) and count($_SESSION['alerts'])) {
-			$alerts = array_merge($_SESSION['alerts'], $alerts);
-		}
-
-		/**
-		 *   types:
-		 *   - default
-		 *   - success
-		 *   - warning
-		 *   - error
-		 **/
-
-		$alert = '<div class="kn-toast-alert">';
-		if (count($alerts)) {
-
-			$firstItem = array_values($alerts)[0];
-			if (is_string($firstItem)) {
-				$alerts = [$alerts];
-			}
-
-			foreach ($alerts as $k => $a) {
-				switch ($a['status']) {
-					case 'error':
-						$a['status'] = 'danger';
-						break;
-
-					case 'default':
-						$a['status'] = 'dark';
-						break;
-				}
-				$alert .= '<div class="kn-alert kn-alert-' . $a['status'] . '">' . $a['message'] . '</div>';
-			}
-
-			if (isset($_SESSION['alerts']) !== false)
-				unset($_SESSION['alerts']);
-		}
-		$alert .= '</div>';
-
-		return $alert;
-	}
-
-	/**
 	 * Language Translation
 	 * @param  $key 
 	 * @return $key translated string    
@@ -575,7 +489,6 @@ class Helper
 			}
 		} else {
 			$return = null;
-			// new app\core\Log('sys_asset', $filename);
 		}
 
 		if ($echo == true) {
@@ -600,9 +513,8 @@ class Helper
 		if (isset($_COOKIE[KX_SESSION_NAME]) !== false) {
 
 			$csrf = [
-				'cookie'        => self::authCode(),
 				'timeout'       => strtotime('+1 hour'),
-				'header'        => self::getHeader(),
+				'header'        => self::getUserAgent(),
 				'ip'            => self::getIp()
 			];
 
@@ -630,7 +542,7 @@ class Helper
 			if (
 				(isset($token['cookie']) !== false and $token['cookie'] == $_COOKIE[KX_SESSION_NAME]) and
 				(isset($token['timeout']) !== false and $token['timeout'] >= time()) and
-				(isset($token['header']) !== false and $token['header'] == self::getHeader()) and
+				(isset($token['header']) !== false and $token['header'] == self::getUserAgent()) and
 				(isset($token['ip']) !== false and $token['ip'] == self::getIp())
 
 			) {
@@ -741,10 +653,10 @@ class Helper
 
 
 	/**
-	 * Get Header
+	 * Get User Agent
 	 * @return string
 	 */
-	public static function getHeader()
+	public static function getUserAgent()
 	{
 
 		return isset($_SERVER['HTTP_USER_AGENT']) !== false ? $_SERVER['HTTP_USER_AGENT'] : 'unknown';
@@ -795,7 +707,7 @@ class Helper
 	public static function userAgentDetails($ua = null): array
 	{
 
-		$ua = is_null($ua) ? self::getHeader() : $ua;
+		$ua = is_null($ua) ? self::getUserAgent() : $ua;
 		$browser = '';
 		$platform = '';
 		$bIcon = 'ti ti-circle-x';
@@ -1053,7 +965,7 @@ class Helper
 
 		$ciphering = "AES-128-CTR";
 		$encryptionIv = '1234567891011121';
-		$encryptionKey = md5((string) self::config('app.name'));
+		$encryptionKey = md5((string) self::config('settings.name'));
 		$text = openssl_encrypt((string)$text, $ciphering, $encryptionKey, 0, $encryptionIv);
 		return bin2hex($text);
 	}
@@ -1069,7 +981,7 @@ class Helper
 
 		$ciphering = "AES-128-CTR";
 		$decryptionIv = '1234567891011121';
-		$decryptionKey = md5((string) self::config('app.name'));
+		$decryptionKey = md5((string) self::config('settings.name'));
 		return openssl_decrypt(hex2bin($encryptedString), $ciphering, $decryptionKey, 0, $decryptionIv);
 	}
 
@@ -1096,16 +1008,6 @@ class Helper
 			$return = 'value="' . $return . '"';
 		}
 		return $return;
-	}
-
-	/**
-	 * Get auth status
-	 * @return bool
-	 */
-	public static function isAuth()
-	{
-
-		return isset($_SESSION['user']->id) !== false ? true : false;
 	}
 
 	/**
@@ -1150,35 +1052,6 @@ class Helper
 			$key .= $inputs[mt_rand(0, (count($inputs) - 1))];
 		}
 		return $key;
-	}
-
-	/**
-	 * Get Auth Code
-	 * @return string
-	 */
-
-	public static function authCode()
-	{
-
-		return isset($_COOKIE[KX_SESSION_NAME]) !== false ? $_COOKIE[KX_SESSION_NAME] : null;
-	}
-
-	/**
-	 * Return a User Info from Session
-	 * @param string $key
-	 * @return string
-	 */
-	public static function userData($key)
-	{
-
-		if ($key == 'auth_code')
-			return $_COOKIE[KX_SESSION_NAME];
-
-		$return = isset($_SESSION['user']->{$key}) !== false ? $_SESSION['user']->{$key} : null;
-		if ($key == 'b_date' and $return) {
-			$return = date('Y-m-d', (int) $return);
-		}
-		return $return;
 	}
 
 	/**
