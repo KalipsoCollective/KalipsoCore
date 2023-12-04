@@ -146,10 +146,27 @@ final class Router
 
     $this->route = null;
 
-
-
     if (isset($this->routes[$this->endpoint]) === false) {
-      throw new \Exception('Route not found: ' . $this->endpoint, 404);
+
+      $this->route = null;
+
+      foreach ($this->routes as $route => $routeDetails) {
+
+        $route = '/' . trim($route, '/');
+
+        if (preg_match('/^' . str_replace('/', '\/', $route) . '/', $this->endpoint)) {
+          $this->route = $route;
+          $this->routeDetails = $routeDetails;
+          break;
+        }
+      }
+
+      if (is_null($this->route)) {
+        throw new \Exception('Route not found: ' . $this->endpoint, 404);
+      }
+    } else {
+      $this->route = $this->endpoint;
+      $this->routeDetails = $this->routes[$this->endpoint];
     }
 
     if (isset($this->routes[$this->endpoint][$this->method]) === false) {
