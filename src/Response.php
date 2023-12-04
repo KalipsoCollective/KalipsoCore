@@ -19,6 +19,7 @@ final class Response
     private $responseMessage;
     private $responseHeaders;
     private $responseBody;
+    private $layout;
 
     /**
      * Response constructor
@@ -108,6 +109,88 @@ final class Response
         http_response_code($this->statusCode);
 
         echo $this->responseBody;
+
+        return $this;
+    }
+
+    /**
+     * Set layout
+     * @param string|array $layout
+     * @return object
+     */
+    public function setLayout(string|array $layout): object
+    {
+        if (is_array($layout)) {
+            $this->layout = $layout;
+        } else {
+            $layoutPath = Helper::path('app/View' . DIRECTORY_SEPARATOR . '_' . $layout . '.php');
+            if (!file_exists($layoutPath)) {
+                throw new \Exception('Layout cannot be empty - ' . $layoutPath);
+            }
+            $this->layout = require($layoutPath);
+        }
+        return $this;
+    }
+
+    /**
+     * Render view
+     * @param string $view
+     * @param array $data
+     * @return object
+     */
+    public function render(string $view, array $data = []): object
+    {
+
+        if (!empty($this->layout)) {
+            extract($data);
+        }
+
+        // default data
+        $data['Helper'] = new Helper();
+
+        $viewPath = Helper::path('app/View' . DIRECTORY_SEPARATOR . str_replace(
+            '.',
+            DIRECTORY_SEPARATOR,
+            $view
+        ) . '.php');
+
+        if (!file_exists($viewPath)) {
+            throw new \Exception('View file not found - ' . $viewPath);
+        } else {
+            extract($data);
+            ob_start();
+            foreach ($this->layout as $part) {
+                if ($part === 'x') {
+                    require($viewPath);
+                } else {
+                    $partPath = Helper::path('app/View' . DIRECTORY_SEPARATOR . str_replace(
+                        '.',
+                        DIRECTORY_SEPARATOR,
+                        $part
+                    ) . '.php');
+                    if (!file_exists($partPath)) {
+                        throw new \Exception('View file not found - ' . $partPath);
+                    }
+                    require($partPath);
+                }
+            }
+            $this->setBody(ob_get_clean());
+        }
+
+        $this->send();
+
+        return $this;
+    }
+
+    /**
+     * Render json
+     * @param array $data
+     * @return object
+     */
+    public function json(array $data): object
+    {
+        $this->setHeader('Content-Type: application/json; charset=utf-8');
+        $this->send(json_encode($data));
 
         return $this;
     }
