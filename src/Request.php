@@ -117,10 +117,10 @@ final class Request
 
     /**
      * Get request params
-     * @return array
+     * @return any
      */
-    public function getParam(string $key): string
+    public function getParam(string $key)
     {
-        return $this->getParams[$key] ?? $this->postParams[$key] ?? '';
+        return isset($this->getParams()[$key]) !== false ? $this->getParams()[$key] : false;
     }
 }
