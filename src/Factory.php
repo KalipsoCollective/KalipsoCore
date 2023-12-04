@@ -237,18 +237,31 @@ final class Factory
         // detect route
         $this->router->run();
 
-        // set http status code
-        $this->response->setStatusCode(200);
+        if ($this->router->getRouteDetails()) {
 
-        // apply headers
-        $this->response->applyHeaders();
+            $response = call_user_func(
+                $this->router->getRouteDetails()['controller'],
+                $this->request,
+                $this->response,
+                $this
+            );
+            $this->response = $response ?? $this->response;
+        } else {
+            $this->response->setStatusCode(404);
+            $this->response->setResponseMessage('Not Found');
+            $this->response->setHeader('Content-Type: application/json');
+            $this->response->setBody(json_encode([
+                'status' => 'error',
+                'message' => 'Not Found'
+            ]));
+        }
 
-
+        /*
         echo '<pre>';
         var_dump($this->router->getRoute());
         echo '</pre>';
-        exit;
-        echo KX_ROOT;
+        exit; */
+        // echo KX_ROOT;
     }
 
     /**
@@ -259,6 +272,17 @@ final class Factory
     public function setCustomErrorHandler($handler): object
     {
         Exception::setErrorHandler($this->request, $this->response, $handler);
+        return $this;
+    }
+
+    /**
+     * Set layout
+     * @param string|array $layout
+     * @return object
+     */
+    public function setLayout(string|array $layout): object
+    {
+        $this->response->setLayout($layout);
         return $this;
     }
 }
