@@ -239,6 +239,8 @@ final class Factory
 
         if ($this->router->getRouteDetails()) {
 
+            Helper::dump($this->router->getAttributes());
+            exit;
             $response = call_user_func(
                 $this->router->getRouteDetails()['controller'],
                 $this->request,
