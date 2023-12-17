@@ -14,12 +14,40 @@ use KX\Core\Exception;
 
 final class Response
 {
-    private $response;
     private $statusCode;
     private $responseMessage;
     private $responseHeaders;
     private $responseBody;
     private $layout;
+    private $responseMessageList = [
+        200 => 'OK',
+        201 => 'Created',
+        202 => 'Accepted',
+        204 => 'No Content',
+        206 => 'Partial Content',
+        301 => 'Moved Permanently',
+        302 => 'Found',
+        303 => 'See Other',
+        304 => 'Not Modified',
+        307 => 'Temporary Redirect',
+        308 => 'Permanent Redirect',
+        400 => 'Bad Request',
+        401 => 'Unauthorized',
+        403 => 'Forbidden',
+        404 => 'Not Found',
+        405 => 'Method Not Allowed',
+        406 => 'Not Acceptable',
+        409 => 'Conflict',
+        410 => 'Gone',
+        412 => 'Precondition Failed',
+        415 => 'Unsupported Media Type',
+        422 => 'Unprocessable Entity',
+        429 => 'Too Many Requests',
+        500 => 'Internal Server Error',
+        501 => 'Not Implemented',
+        503 => 'Service Unavailable'
+    ];
+    private $redirection = null;
 
     /**
      * Response constructor
@@ -27,7 +55,8 @@ final class Response
      */
     public function __construct()
     {
-        $this->response = [];
+
+        ob_start();
         $this->statusCode = 200;
         $this->responseMessage = 'OK';
         $this->responseHeaders = [];
@@ -41,9 +70,10 @@ final class Response
      * @param int $code
      * @return object
      */
-    public function setStatusCode(int $code): object
+    public function setStatus(int $code): object
     {
         $this->statusCode = $code;
+        $this->responseMessage = $this->responseMessageList[$code];
         return $this;
     }
 
@@ -59,23 +89,17 @@ final class Response
     }
 
     /**
-     * Set response message
-     * @param string $message
-     * @return object
-     */
-
-    public function setResponseMessage(string $message): object
-    {
-        $this->responseMessage = $message;
-        return $this;
-    }
-
-    /**
      * Apply headers
      * @return object
      */
     public function applyHeaders(): object
     {
+        array_unshift(
+            $this->responseHeaders,
+            $_SERVER['SERVER_PROTOCOL'] .
+                ' ' . $this->statusCode .
+                ' ' . $this->responseMessage
+        );
         foreach ($this->responseHeaders as $header) {
             header($header);
         }
@@ -89,7 +113,7 @@ final class Response
      */
     public function setBody(string $body): object
     {
-        $this->responseBody = $body;
+        $this->responseBody .= $body;
         return $this;
     }
 
@@ -158,7 +182,7 @@ final class Response
             throw new \Exception('View file not found - ' . $viewPath);
         } else {
             extract($data);
-            ob_start();
+
             foreach ($this->layout as $part) {
                 if ($part === 'x') {
                     require($viewPath);
@@ -193,5 +217,58 @@ final class Response
         $this->send(json_encode($data));
 
         return $this;
+    }
+
+    /**
+     * Redirect
+     * @param string $url
+     * @param int $statusCode
+     */
+    public function redirect(string $url, int $statusCode = 302): void
+    {
+        $this->redirection = [
+            'url' => $url,
+            'statusCode' => $statusCode
+        ];
+        $this->statusCode = $statusCode;
+    }
+
+    /**
+     * Get status code
+     * @return int
+     */
+    public function getStatusCode(): int
+    {
+        return $this->statusCode;
+    }
+
+    /**
+     * Get body
+     * @return string
+     */
+    public function getBody(): string
+    {
+        return $this->responseBody;
+    }
+
+    /**
+     * Get redirection
+     * @return array|null
+     */
+    public function getRedirection(): array|null
+    {
+        return $this->redirection;
+    }
+
+    /**
+     * Run redirection
+     * @return void
+     */
+    public function runRedirection(): void
+    {
+        if ($this->redirection) {
+            header('Location: ' . $this->redirection['url'], true, $this->redirection['statusCode']);
+            exit;
+        }
     }
 }

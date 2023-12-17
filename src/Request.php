@@ -9,9 +9,6 @@ declare(strict_types=1);
 
 namespace KX\Core;
 
-use KX\Core\Helper;
-use KX\Core\Exception;
-
 final class Request
 {
 
@@ -22,6 +19,7 @@ final class Request
     private $getParams;
     private $postParams;
     private $header;
+    private $middlewareParams;
 
 
 
@@ -39,6 +37,8 @@ final class Request
         $this->header = getallheaders();
         $this->getParams = $_GET;
         $this->postParams = $_POST;
+        $this->middlewareParams = [];
+
 
         return $this;
     }
@@ -122,5 +122,25 @@ final class Request
     public function getParam(string $key)
     {
         return isset($this->getParams()[$key]) !== false ? $this->getParams()[$key] : false;
+    }
+
+    /**
+     * Get middleware params
+     * @return array
+     */
+    public function getMiddlewareParams(): array
+    {
+        return $this->middlewareParams;
+    }
+
+    /**
+     * Set middleware params
+     * @param array $params
+     * @return object
+     */
+    public function setMiddlewareParams(array $params): object
+    {
+        $this->middlewareParams = $params;
+        return $this;
     }
 }

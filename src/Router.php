@@ -23,8 +23,7 @@ final class Router
     private $route = null;
     private $routeDetails = null;
     private $method = null;
-    public $methodNotAllowed = false;
-    public $notFound = false;
+    public  $methodNotAllowed = false;
 
     /**
      * Router constructor
@@ -88,7 +87,7 @@ final class Router
 
             foreach ($method as $m) {
                 if (!in_array($m, $this->methods)) {
-                    throw new \Exception('Invalid method: ' . $m);
+                    throw new \Exception('Invalid method: ' . $m . ' in: ' . $path);
                 }
                 $path = '/' . trim($path, '/');
                 if (isset($this->routes[$path]) === false) {
@@ -214,7 +213,6 @@ final class Router
                                     if ($totalPath === ($pathIndex + 1)) {
                                         $route = $details;
                                         $routePath = $path;
-                                        $notFound = false;
                                         $detectedRoutes[$path] = $details;
                                     }
                                 } else {
@@ -267,13 +265,14 @@ final class Router
                     $this->route = $routePath;
                     $this->routeDetails = $route[$this->method];
                 }
+                // route not found
             } else {
                 $this->route = $routePath;
                 $this->routeDetails = $route;
             }
         } else {
             if (isset($this->routes[$this->endpoint][$this->method]) === false) {
-                throw new \Exception('Method not allowed: ' . $this->method, 405);
+                $this->methodNotAllowed = true;
             } else {
                 $this->route = $this->endpoint;
                 $this->routeDetails = $this->routes[$this->endpoint][$this->method];

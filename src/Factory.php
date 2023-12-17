@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace KX\Core;
 
 use KX\Core\Helper;
+use KX\Core\Log;
 use KX\Core\Exception;
 use KX\Core\Request;
 use KX\Core\Response;
@@ -42,11 +43,6 @@ final class Factory
      */
     public function setup(): object
     {
-
-        /**
-         * Output buffer start
-         **/
-        ob_start();
 
         /**
          * Shutdown function registration
@@ -142,7 +138,7 @@ final class Factory
         /**
          * Set powered by
          **/
-        if (!Helper::config('VISIBLE_POWERED_BY', true)) {
+        if (Helper::config('VISIBLE_POWERED_BY', true)) {
             $this->response->setHeader('X-Powered-By: KalipsoCore ' . KX_CORE_VERSION);
         }
 
@@ -234,36 +230,133 @@ final class Factory
      */
     public function run()
     {
+
+        Helper::dump("RATE_LIMIT: " . Helper::config('RATE_LIMIT'), true);
+
         // detect route
         $this->router->run();
-
         if ($this->router->getRouteDetails()) {
 
-            Helper::dump($this->router->getAttributes());
-            exit;
-            $response = call_user_func(
-                $this->router->getRouteDetails()['controller'],
-                $this->request,
-                $this->response,
-                $this
-            );
-            $this->response = $response ?? $this->response;
-        } else {
-            $this->response->setStatusCode(404);
-            $this->response->setResponseMessage('Not Found');
-            $this->response->setHeader('Content-Type: application/json');
-            $this->response->setBody(json_encode([
-                'status' => 'error',
-                'message' => 'Not Found'
-            ]));
-        }
+            // apply middlewares
+            $next = true;
+            $redirect = false;
 
-        /*
-        echo '<pre>';
-        var_dump($this->router->getRoute());
-        echo '</pre>';
-        exit; */
-        // echo KX_ROOT;
+            if (isset($this->router->getRouteDetails()['middlewares'])) {
+                foreach ($this->router->getRouteDetails()['middlewares'] as $m) {
+
+                    unset($middleware);
+                    if ($m instanceof \Closure) {
+                        $middleware = $m(
+                            $this->request,
+                            $this->response,
+                            $this
+                        );
+                    } elseif (
+                        is_string($m) &&
+                        strpos($m, '@') !== false
+                    ) {
+                        $middlewareStr = explode(
+                            '@',
+                            $m,
+                            2
+                        );
+                        $middlewareStr[0] = 'KX\\Middleware\\' . $middlewareStr[0];
+
+                        $m = new $middlewareStr[0]();
+                        $middleware = $m->{$middlewareStr[1]}(
+                            $this->request
+                        );
+                    }
+
+                    if (isset($middleware) && $middleware instanceof Middleware) {
+                        if ($middleware->isNextCalled()) {
+
+                            if (!empty($middleware->getParameters())) {
+                                $this->request->setMiddlewareParams(
+                                    $middleware->getParameters()
+                                );
+                            }
+                        } else {
+                            if ($middleware->isRedirectCalled()) {
+                                $this->response->redirect(
+                                    $middleware->redirect['url'],
+                                    $middleware->redirect['statusCode']
+                                );
+                                $redirect = true;
+                            }
+                            $next = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if ($next) {
+                if ($this->router->getRouteDetails()['controller'] instanceof \Closure) {
+                    $this->router->getRouteDetails()['controller'](
+                        $this->request,
+                        $this->response,
+                        $this
+                    );
+                } elseif (
+                    is_string($this->router->getRouteDetails()['controller']) &&
+                    strpos($this->router->getRouteDetails()['controller'], '@') !== false
+                ) {
+                    $controllerStr = explode(
+                        '@',
+                        $this->router->getRouteDetails()['controller'],
+                        2
+                    );
+                    $controllerStr[0] = 'KX\\Controller\\' . $controllerStr[0];
+
+                    $controller = new $controllerStr[0]();
+
+                    $controller->{$controllerStr[1]}(
+                        $this->request,
+                        $this->response,
+                        $this
+                    );
+                }
+            }
+
+            $logOption = Helper::config('LOG_LEVEL');
+            if ($logOption === 'debug') {
+                $log = true;
+            } elseif ($logOption === 'error') {
+                if ($this->response->getStatusCode() >= 400) {
+                    $log = true;
+                } else {
+                    $log = false;
+                }
+            } elseif ($logOption === 'none') {
+                $log = false;
+            } else {
+                $log = false;
+            }
+
+            // log  
+            if ($log) {
+
+                $log = new Log();
+                $log->save(
+                    $this->request,
+                    $this->response
+                );
+            }
+
+            if ($redirect) {
+                $this->response->runRedirection();
+            }
+        } else {
+
+            if ($this->router->methodNotAllowed) {
+                $this->response->setStatus(405);
+                $this->response->send('<pre>Method Not Allowed!</pre>');
+            } else {
+                $this->response->setStatus(404);
+                $this->response->send('<pre>Not Found!</pre>');
+            }
+        }
     }
 
     /**
