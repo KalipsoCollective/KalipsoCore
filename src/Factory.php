@@ -11,9 +11,10 @@ namespace KX\Core;
 
 use KX\Core\Helper;
 use KX\Core\Log;
-use KX\Core\Exception;
+use KX\Core\Exception as Exception;
 use KX\Core\Request;
 use KX\Core\Response;
+use \Redis;
 
 final class Factory
 {
@@ -231,7 +232,7 @@ final class Factory
     public function run()
     {
 
-        Helper::dump("RATE_LIMIT: " . Helper::config('RATE_LIMIT'), true);
+        $this->startRateLimit();
 
         // detect route
         $this->router->run();
@@ -379,5 +380,83 @@ final class Factory
     {
         $this->response->setLayout($layout);
         return $this;
+    }
+
+    /**
+     * Start rate limit
+     * @return void
+     */
+    private function startRateLimit()
+    {
+        $limit = (int) Helper::config('RATE_LIMIT');
+        $rateDriver = Helper::config('RATE_LIMIT_DRIVER');
+        if ($limit && in_array($rateDriver, ['file', 'redis']) && $this->request->getRequestMethod() === 'GET') {
+
+            $ip = Helper::getIp();
+
+            if ($rateDriver === 'file') {
+                $jsonFile = KX_ROOT . 'app/Storage/rate_limit.json';
+                if (file_exists($jsonFile)) {
+                    $json = json_decode(file_get_contents($jsonFile), true);
+                } else {
+                    if (!is_dir(dirname($jsonFile))) {
+                        mkdir(dirname($jsonFile), 0777, true);
+                    }
+                    touch($jsonFile);
+                    $json = [];
+                }
+
+                if (isset($json[$ip]) !== false && $json[$ip]['time'] < time() - 60) {
+                    unset($json[$ip]);
+                }
+
+                if (isset($json[$ip]) === false) {
+                    $json[$ip] = [
+                        'time' => time(),
+                        'count' => 0,
+                    ];
+                }
+
+                $json[$ip]['count']++;
+                $remaining = $limit - $json[$ip]['count'];
+                $reset = $json[$ip]['time'] + 60;
+                file_put_contents($jsonFile, json_encode($json, JSON_PRETTY_PRINT));
+            } elseif ($rateDriver === 'redis') {
+                $redis = new Redis();
+                $redis->connect(
+                    Helper::config('REDIS_HOST')
+                );
+                if (!empty(Helper::config('REDIS_PASSWORD'))) {
+                    $redis->auth(Helper::config('REDIS_PASSWORD'));
+                }
+                $redis->select((int)Helper::config('REDIS_DB'));
+                $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+
+                if ($redis->exists($ip) && $redis->get($ip)['time'] < time() - 60) {
+                    $redis->del($ip);
+                }
+
+                if (!$redis->exists($ip)) {
+                    $redis->set($ip, [
+                        'time' => time(),
+                        'count' => 0,
+                    ]);
+                }
+
+                $redis->incr($ip . '.count');
+                $remaining = $limit - $redis->get($ip)['count'];
+                $redis->expire($ip, 60);
+                $reset = $redis->get($ip)['time'] + 60;
+            }
+
+            $this->response->setHeader('X-RateLimit-Limit: ' . $limit);
+            $this->response->setHeader('X-RateLimit-Remaining: ' . $remaining);
+            $this->response->setHeader('X-RateLimit-Reset: ' . $reset);
+
+            if ($remaining < 0) {
+                throw new \Exception('Too many requests!', 429, null);
+                exit;
+            }
+        }
     }
 }
