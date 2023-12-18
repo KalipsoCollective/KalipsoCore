@@ -232,6 +232,7 @@ final class Factory
     public function run()
     {
 
+        $this->checkIPBlock();
         $this->startRateLimit();
 
         // detect route
@@ -421,7 +422,7 @@ final class Factory
                 $remaining = $limit - $json[$ip]['count'];
                 $reset = $json[$ip]['time'] + 60;
                 file_put_contents($jsonFile, json_encode($json, JSON_PRETTY_PRINT));
-            } elseif ($rateDriver === 'redis') {
+            } elseif ($rateDriver === 'redis' && class_exists('Redis')) {
                 $redis = new Redis();
                 $redis->connect(
                     Helper::config('REDIS_HOST')
@@ -432,21 +433,26 @@ final class Factory
                 $redis->select((int)Helper::config('REDIS_DB'));
                 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
 
-                if ($redis->exists($ip) && $redis->get($ip)['time'] < time() - 60) {
-                    $redis->del($ip);
+                $key = 'rate_limiter_' . $ip;
+
+                if ($redis->exists($key) && $redis->get($key)['time'] < time() - 60) {
+                    $redis->del($key);
                 }
 
-                if (!$redis->exists($ip)) {
-                    $redis->set($ip, [
+                if (!$redis->exists($key)) {
+                    $redis->set($key, [
                         'time' => time(),
                         'count' => 0,
                     ]);
                 }
 
-                $redis->incr($ip . '.count');
-                $remaining = $limit - $redis->get($ip)['count'];
-                $redis->expire($ip, 60);
-                $reset = $redis->get($ip)['time'] + 60;
+                $redisCache = $redis->get($key);
+
+                $redisCache['count']++;
+
+                $remaining = $limit - $redisCache['count'];
+                $reset = $redisCache['time'] + 60;
+                $redis->set($key, $redisCache);
             }
 
             $this->response->setHeader('X-RateLimit-Limit: ' . $limit);
@@ -454,8 +460,64 @@ final class Factory
             $this->response->setHeader('X-RateLimit-Reset: ' . $reset);
 
             if ($remaining < 0) {
-                throw new \Exception('Too many requests!', 429, null);
+                throw new \Exception('Reset: ' . date('d.m.Y H:i:s', (int)$reset), 429, null);
                 exit;
+            }
+        }
+    }
+
+    /**
+     * Check IP block
+     * @return void
+     */
+    private function checkIPBlock()
+    {
+
+        $ipBlocker = Helper::config('IP_BLOCKER', true);
+        if (!$ipBlocker) {
+            return;
+        }
+
+        $ip = Helper::getIp();
+        $blockDriver = Helper::config('IP_BLOCKER_DRIVER');
+        if (in_array($blockDriver, ['file', 'redis'])) {
+
+            if ($blockDriver === 'file') {
+                $jsonFile = KX_ROOT . 'app/Storage/ip_block.json';
+                if (file_exists($jsonFile)) {
+                    $json = json_decode(file_get_contents($jsonFile), true);
+                } else {
+                    if (!is_dir(dirname($jsonFile))) {
+                        mkdir(dirname($jsonFile), 0777, true);
+                    }
+                    touch($jsonFile);
+                    $json = [];
+                }
+
+                file_put_contents($jsonFile, json_encode($json, JSON_PRETTY_PRINT));
+
+                if (isset($json[$ip]) !== false) {
+                    throw new \Exception('IP blocked!', 403, null);
+                    exit;
+                }
+            } elseif ($blockDriver === 'redis' && class_exists('Redis')) {
+
+                $redis = new Redis();
+                $redis->connect(
+                    Helper::config('REDIS_HOST')
+                );
+                if (!empty(Helper::config('REDIS_PASSWORD'))) {
+                    $redis->auth(Helper::config('REDIS_PASSWORD'));
+                }
+                $redis->select((int)Helper::config('REDIS_DB'));
+                $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+
+                $key = 'ip_block_' . $ip;
+
+                if ($redis->exists($key)) {
+                    throw new \Exception('IP blocked!', 403, null);
+                    exit;
+                }
             }
         }
     }
