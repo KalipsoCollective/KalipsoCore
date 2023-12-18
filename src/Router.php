@@ -246,12 +246,18 @@ final class Router
                     }
 
                     if (Helper::config('settings.route_cache')) {
+
+                        // dir check
+                        if (!is_dir(Helper::path('app/Storage/route_cache'))) {
+                            mkdir(Helper::path('app/Storage/route_cache'), 0777, true);
+                        }
+
                         file_put_contents(
                             Helper::path('app/Storage/route_cache/' . $routeHash . '.json'),
                             json_encode([
                                 'attributes' => $this->attributes,
                                 'routePath' => $routePath,
-                                'route' => $route[$this->method]
+                                'route' => $route
                             ])
                         );
                     }
@@ -263,7 +269,7 @@ final class Router
                         throw new \Exception('Method not allowed: ' . $this->method, 405);
                     }
                     $this->route = $routePath;
-                    $this->routeDetails = $route[$this->method];
+                    $this->routeDetails = $route;
                 }
                 // route not found
             } else {
