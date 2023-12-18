@@ -81,16 +81,22 @@ final class Exception
         }
 
         $output = '';
-        if (Helper::config('DEV_MODE', true)) {
+        if (Helper::config('DEV_MODE', true) && $errNo !== 429 && $errNo !== 403) {
             $output .= $file . ':' . $line . ' - ';
         }
         $output .= $errMsg;
         if ($errNo) {
             $output .= ' <strong>(' . $errNo . ')</strong>';
         }
+        $title = 'Error Handler';
         // set http status code
         if (isset(self::$possibleHttpStatusCodes[$errNo]) !== false) {
             header($_SERVER['SERVER_PROTOCOL'] . ' ' . $errNo . ' ' . self::$possibleHttpStatusCodes[$errNo], true, $errNo);
+            if ($errNo === 429) {
+                $title = 'Too Many Requests!';
+            } elseif ($errNo === 403) {
+                $title = 'Forbidden!';
+            }
         } else {
             header($_SERVER['SERVER_PROTOCOL'] . ' 500 Internal Server Error', true, 500);
         }
@@ -107,7 +113,7 @@ final class Exception
 			<html>
 				<head>
 					<meta charset="utf-8">
-					<title>Error Handler - KX</title>
+					<title>[TITLE] - KX</title>
 					<style>
 					body {
 						font-family: monospace;
@@ -130,13 +136,23 @@ final class Exception
 				</head>
 				<body>
 					<h1>KalipsoX</h1>
-					<h2>Error Handler</h2>
+					<h2>[TITLE]</h2>
 					<pre>[OUTPUT]</pre>
 				</body>
 			</html>';
 
             $errorOutput = '    ' . $output;
-            echo str_replace('[OUTPUT]', $errorOutput, $handlerOutput);
+            echo str_replace(
+                [
+                    '[OUTPUT]',
+                    '[TITLE]'
+                ],
+                [
+                    $errorOutput,
+                    $title
+                ],
+                $handlerOutput
+            );
         }
         exit;
     }
