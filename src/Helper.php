@@ -510,7 +510,7 @@ class Helper
 
 
 		$return = null;
-		if (isset($_COOKIE[KX_SESSION_NAME]) !== false) {
+		if (isset($_COOKIE[self::config('SESSION_NAME')]) !== false) {
 
 			$csrf = [
 				'timeout'       => strtotime('+1 hour'),
@@ -540,7 +540,7 @@ class Helper
 		if (is_array($token)) {
 
 			if (
-				(isset($token['cookie']) !== false and $token['cookie'] == $_COOKIE[KX_SESSION_NAME]) and
+				(isset($token['cookie']) !== false and $token['cookie'] == $_COOKIE[self::config('SESSION_NAME')]) and
 				(isset($token['timeout']) !== false and $token['timeout'] >= time()) and
 				(isset($token['header']) !== false and $token['header'] == self::getUserAgent()) and
 				(isset($token['ip']) !== false and $token['ip'] == self::getIp())
