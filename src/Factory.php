@@ -13,8 +13,10 @@ use KX\Core\Helper;
 use KX\Core\Log;
 use KX\Core\Exception as Exception;
 use KX\Core\Request;
+use KX\Core\Router;
 use KX\Core\Response;
-use \Redis;
+use KX\Core\Middleware;
+use Redis;
 
 final class Factory
 {
@@ -453,6 +455,8 @@ final class Factory
                 $remaining = $limit - $redisCache['count'];
                 $reset = $redisCache['time'] + 60;
                 $redis->set($key, $redisCache);
+
+                $redis->close();
             }
 
             $this->response->setHeader('X-RateLimit-Limit: ' . $limit);
@@ -514,7 +518,10 @@ final class Factory
 
                 $key = 'ip_block_' . $ip;
 
-                if ($redis->exists($key)) {
+                $isExists = $redis->exists($key);
+                $redis->close();
+
+                if ($isExists) {
                     throw new \Exception('IP blocked!', 403, null);
                     exit;
                 }
