@@ -10,8 +10,6 @@ declare(strict_types=1);
 namespace KX\Core;
 
 use KX\Core\Helper;
-use KX\Core\Exception;
-use stdClass;
 
 final class Router
 {
