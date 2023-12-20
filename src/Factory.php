@@ -402,9 +402,7 @@ final class Factory
                 if (file_exists($jsonFile)) {
                     $json = json_decode(file_get_contents($jsonFile), true);
                 } else {
-                    if (!is_dir(dirname($jsonFile))) {
-                        mkdir(dirname($jsonFile), 0777, true);
-                    }
+                    Helper::path('app/Storage/', true);
                     touch($jsonFile);
                     $json = [];
                 }
@@ -491,9 +489,7 @@ final class Factory
                 if (file_exists($jsonFile)) {
                     $json = json_decode(file_get_contents($jsonFile), true);
                 } else {
-                    if (!is_dir(dirname($jsonFile))) {
-                        mkdir(dirname($jsonFile), 0777, true);
-                    }
+                    Helper::path('app/Storage/', true);
                     touch($jsonFile);
                     $json = [];
                 }
