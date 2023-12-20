@@ -49,13 +49,7 @@ final class Log
         $logFile = KX_ROOT . 'app/Storage/logs/' . $response->getStatusCode() . '-' .
             date('Y-m-d') . '.log';
 
-        if (!is_dir(KX_ROOT . 'app/Storage')) {
-            mkdir(KX_ROOT . 'app/Storage');
-        }
-
-        if (!is_dir(KX_ROOT . 'app/Storage/logs')) {
-            mkdir(KX_ROOT . 'app/Storage/logs');
-        }
+        Helper::path('app/Storage/logs', true);
 
         if (!file_exists($logFile)) {
             touch($logFile);
