@@ -246,9 +246,7 @@ final class Router
                     if (Helper::config('settings.route_cache')) {
 
                         // dir check
-                        if (!is_dir(Helper::path('app/Storage/route_cache'))) {
-                            mkdir(Helper::path('app/Storage/route_cache'), 0777, true);
-                        }
+                        Helper::path('app/Storage/route_cache', true);
 
                         file_put_contents(
                             Helper::path('app/Storage/route_cache/' . $routeHash . '.json'),
