@@ -11,7 +11,7 @@ namespace KX\Core;
 
 use KX\Core\Helper;
 use KX\Core\Log;
-use KX\Core\Exception as Exception;
+use KX\Core\Exception;
 use KX\Core\Request;
 use KX\Core\Router;
 use KX\Core\Response;

@@ -44,19 +44,19 @@ final class Log
             ],
         ];
 
-        $log = json_encode($log, JSON_PRETTY_PRINT);
+        $log = json_encode($log, JSON_PRETTY_PRINT) . ',';
 
-        $logFile = KX_ROOT . 'app/Storage/logs/' . $response->getStatusCode() . '-' .
-            date('Y-m-d') . '.log';
+        $logFile = KX_ROOT . 'app/Storage/logs/' . $response->getStatusCode() . '_' .
+            date('Ymd') . '_' . Helper::getIp() . '.log';
 
         Helper::path('app/Storage/logs', true);
 
         if (!file_exists($logFile)) {
             touch($logFile);
         } else {
-            $log .= ',';
+            $log = PHP_EOL . $log;
         }
 
-        file_put_contents($logFile, $log . PHP_EOL, FILE_APPEND);
+        file_put_contents($logFile, $log, FILE_APPEND);
     }
 }
