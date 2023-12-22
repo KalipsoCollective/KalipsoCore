@@ -76,7 +76,7 @@ class Model extends Pdox
      *         'primary' => ['id'],
      *         'unique' => ['username', 'email'],
      *         'index_created_at' => ['created_at'],
-     *         'composite_index' => ['username', 'created_at'],
+     *         'composite_index' => ['username(255)', 'created_at'],
      *          ...
      *     ]
      * ];
