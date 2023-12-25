@@ -19,6 +19,9 @@ class Model extends Pdox
     protected $table = '';
     protected $schema;
     protected $bulkData = [];
+    protected $created = false;
+    protected $updated = false;
+
 
     public function __construct()
     {
@@ -78,13 +81,41 @@ class Model extends Pdox
      *         'index_created_at' => ['created_at'],
      *         'composite_index' => ['username(255)', 'created_at'],
      *          ...
-     *     ]
+     *     ],
      * ];
      * 
      */
     public function setSchema(object|array $schema): object
     {
         $this->schema = is_array($schema) ? json_decode(json_encode($schema)) : $schema;
+
+        if ($this->created) {
+            $this->schema->columns->created_at = (object) [
+                'type' => 'varchar',
+                'nullable' => false,
+                'length' => 255,
+            ];
+            $this->schema->columns->created_by = (object) [
+                'type' => 'INT',
+                'nullable' => false,
+                'length' => '11',
+                'default' => 0
+            ];
+        }
+
+        if ($this->updated) {
+            $this->schema->columns->updated_at = (object) [
+                'type' => 'varchar',
+                'nullable' => true,
+                'length' => 255,
+            ];
+            $this->schema->columns->updated_by = (object) [
+                'type' => 'INT',
+                'nullable' => true,
+                'length' => '11',
+                'default' => 0
+            ];
+        }
         return $this;
     }
 
@@ -113,9 +144,9 @@ class Model extends Pdox
     /**
      * Create table
      * @param bool $importData
-     * @return void
+     * @return array
      */
-    public function setupModels($importData = false)
+    public function setupModels($importData = false): array
     {
         // delete all database tables
         $sql = 'SELECT 
@@ -137,15 +168,26 @@ class Model extends Pdox
 
         // create tables
         $modelClasses = Helper::getClasses('app/Model');
+        $summary  = [];
         foreach ($modelClasses as $modelClass) {
 
             $model = new $modelClass();
-            $model->setupModel();
+            $act = $model->setupModel();
 
-            if ($importData) {
-                $model->importData();
+            $summary[$model->table] = [
+                'status' => $act,
+                'message' => $act ? 'Table created successfully.' : 'Table creation failed.'
+            ];
+            if ($act) {
+                if ($importData) {
+                    $import = $model->importData();
+                    $summary[$model->table]['seed_status'] = $import;
+                    $summary[$model->table]['seed_message'] = $import ? 'Data imported successfully.' : 'Data import failed.';
+                }
             }
         }
+
+        return $summary;
     }
 
     /**
@@ -159,7 +201,7 @@ class Model extends Pdox
 
         // columns
         foreach ($this->schema->columns as $columnName => $column) {
-            $query .= ' `' . $columnName . '` ' . $column->type . ' ';
+            $query .= ' `' . $columnName . '` ' . strtolower($column->type);
 
             if (isset($column->length)) {
                 $query .= '(' . $column->length . ')';
@@ -175,8 +217,10 @@ class Model extends Pdox
                     $def = 'CURRENT_TIMESTAMP';
                 } elseif (is_null($column->default)) {
                     $def = 'NULL';
+                } elseif (is_numeric($column->default)) {
+                    $def = $column->default;
                 } else {
-                    $def = '`' . $column->default . '`';
+                    $def = '\'' . $column->default . '\'';
                 }
                 $query .= ' DEFAULT ' . $def;
             }
@@ -197,10 +241,9 @@ class Model extends Pdox
             }
         }
 
-        $query = rtrim($query, PHP_EOL . ',') . PHP_EOL . ') ENGINE=' . $this->schema->engine . ' DEFAULT CHARSET=' . $this->schema->charset . ' COLLATE=' . $this->schema->collation . ';' . PHP_EOL;
+        $query = rtrim($query, PHP_EOL . ',') . PHP_EOL . ') ENGINE = ' . $this->schema->engine . ' DEFAULT CHARSET = ' . $this->schema->charset . ' COLLATE = ' . $this->schema->collation . ';' . PHP_EOL;
 
         try {
-
             $this->pdo->exec($query);
             return true;
         } catch (\PDOException $e) {
@@ -215,12 +258,19 @@ class Model extends Pdox
      */
     public function importData()
     {
+
         if (count($this->bulkData)) {
 
             $query = 'INSERT INTO `' . $this->table . '` (';
 
             foreach ($this->bulkData[0] as $columnName => $columnValue) {
                 $query .= '`' . $columnName . '`,';
+            }
+
+            // created
+            if ($this->created) {
+                $query .= '`created_at`,';
+                $query .= '`created_by`,';
             }
 
             $query = rtrim($query, ',') . ') VALUES ';
@@ -233,6 +283,12 @@ class Model extends Pdox
                     $query .= '\'' . $columnValue . '\',';
                 }
 
+                // created
+                if ($this->created) {
+                    $query .= '\'' . time() . '\',';
+                    $query .= '\'' . (Helper::userData('id') ?? 0) . '\',';
+                }
+
                 $query = rtrim($query, ',') . '),';
             }
 
@@ -241,35 +297,40 @@ class Model extends Pdox
             try {
 
                 $this->pdo->exec($query);
-                return true;
             } catch (\PDOException $e) {
 
                 throw new \Exception('DB seed action is not completed. ' . $e->getMessage());
             }
         }
+        return true;
     }
 
     /**
      * Sync tables
-     * @return object
+     * @return array
      */
-    public function syncTables(): object
+    public function syncModels(): array
     {
         // create tables
         $modelClasses = Helper::getClasses('app/Model');
+        $summary = [];
         foreach ($modelClasses as $modelClass) {
 
             $model = new $modelClass();
-            $model->syncTable();
+            $sync = $model->syncModel();
+            $summary[$model->table] = [
+                'status' => $sync,
+                'message' => $sync ? 'Table synced successfully.' : 'Table sync failed.'
+            ];
         }
-        return $this;
+        return $summary;
     }
 
     /**
      * Sync table
      * @return void
      */
-    public function syncTable()
+    public function syncModel()
     {
         $sql = 'SELECT 
             CONCAT(`TABLE_NAME`) 
@@ -301,9 +362,9 @@ class Model extends Pdox
 
             if (count($diff)) {
 
-                $sql = 'ALTER TABLE `' . $this->table . '` ';
-                foreach ($diff as $columnName) {
-                    $sql .= 'ADD COLUMN `' . $columnName . '` ' . $this->schema->columns->$columnName->type . ' ';
+                $sql = 'ALTER TABLE `' . $this->table . '` ADD( ';
+                foreach ($diff as $i => $columnName) {
+                    $sql .= '`' . $columnName . '` ' . $this->schema->columns->$columnName->type . ' ';
 
                     if (isset($this->schema->columns->$columnName->length)) {
                         $sql .= '(' . $this->schema->columns->$columnName->length . ')';
@@ -319,8 +380,10 @@ class Model extends Pdox
                             $def = 'CURRENT_TIMESTAMP';
                         } elseif (is_null($this->schema->columns->$columnName->default)) {
                             $def = 'NULL';
+                        } elseif (is_numeric($this->schema->columns->$columnName->default)) {
+                            $def = $this->schema->columns->$columnName->default;
                         } else {
-                            $def = '`' . $this->schema->columns->$columnName->default . '`';
+                            $def = '\'' . $this->schema->columns->$columnName->default . '\'';
                         }
                         $sql .= ' DEFAULT ' . $def;
                     }
@@ -332,16 +395,18 @@ class Model extends Pdox
                     $sql .= ',' . PHP_EOL;
                 }
 
-                $sql = rtrim($sql, PHP_EOL . ',') . ';';
+                $sql = rtrim($sql, PHP_EOL . ',') . ');';
 
                 try {
-
+                    Helper::dump($sql, true);
                     $this->pdo->exec($sql);
                 } catch (\PDOException $e) {
 
                     throw new \Exception('DB sync action is not completed. ' . $e->getMessage());
                 }
             }
+
+            return true;
         }
     }
 
@@ -400,11 +465,33 @@ class Model extends Pdox
     public function cache($time)
     {
         if (Helper::config('settings.db_cache')) {
-
             Helper::path('app/Storage/db_cache/', true);
-
             parent::cache($time);
         }
+        return $this;
+    }
+
+    /** 
+     * Is created column enabled
+     * 
+     * @param bool $status
+     * @return object
+     */
+    public function created(bool $status = true): object
+    {
+        $this->created = $status;
+        return $this;
+    }
+
+    /** 
+     * Is updated column enabled
+     * 
+     * @param bool $status
+     * @return object
+     */
+    public function updated(bool $status = true): object
+    {
+        $this->updated = $status;
         return $this;
     }
 }
