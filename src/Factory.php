@@ -237,6 +237,7 @@ final class Factory
         $this->checkIPBlock();
         $this->startRateLimit();
 
+
         // detect route
         $this->router->run();
         if ($this->router->getRouteDetails()) {
