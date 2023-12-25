@@ -25,4 +25,4 @@
 ### Installation
 
 - Run `composer require kx/core`
-- Start your awesome project. in
+- Start your awesome project.
