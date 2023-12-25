@@ -1281,4 +1281,20 @@ class Helper
 
         return $classes;
     }
+
+    /**
+     * Get user data
+     * @param string $key
+     * @return mixed
+     */
+    public static function userData($key = null)
+    {
+        global $kxUser;
+
+        if (is_null($key)) {
+            return $kxUser;
+        } else {
+            return isset($kxUser[$key]) !== false ? $kxUser[$key] : null;
+        }
+    }
 }
