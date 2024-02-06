@@ -182,20 +182,23 @@ final class Response
             throw new \Exception('View file not found - ' . $viewPath);
         } else {
             extract($data);
-
-            foreach ($this->layout as $part) {
-                if ($part === 'x') {
-                    require($viewPath);
-                } else {
-                    $partPath = Helper::path('app/View' . DIRECTORY_SEPARATOR . str_replace(
-                        '.',
-                        DIRECTORY_SEPARATOR,
-                        $part
-                    ) . '.php');
-                    if (!file_exists($partPath)) {
-                        throw new \Exception('View file not found - ' . $partPath);
+            if (empty($this->layout)) {
+                require($viewPath);
+            } else {
+                foreach ($this->layout as $part) {
+                    if ($part === 'x') {
+                        require($viewPath);
+                    } else {
+                        $partPath = Helper::path('app/View' . DIRECTORY_SEPARATOR . str_replace(
+                            '.',
+                            DIRECTORY_SEPARATOR,
+                            $part
+                        ) . '.php');
+                        if (!file_exists($partPath)) {
+                            throw new \Exception('View file not found - ' . $partPath);
+                        }
+                        require($partPath);
                     }
-                    require($partPath);
                 }
             }
             $this->setBody(ob_get_clean());
