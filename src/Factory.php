@@ -269,7 +269,8 @@ final class Factory
 
                         $m = new $middlewareStr[0]();
                         $middleware = $m->{$middlewareStr[1]}(
-                            $this->request
+                            $this->request,
+                            $this->response
                         );
                     }
 
