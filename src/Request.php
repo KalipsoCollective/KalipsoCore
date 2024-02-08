@@ -74,9 +74,13 @@ final class Request
      * Get request header
      * @return array
      */
-    public function getHeader(): array
+    public function getHeader(string $param = null): array
     {
-        return $this->header;
+        if ($param !== null) {
+            return isset($this->header[$param]) !== false ? $this->header[$param] : false;
+        } else {
+            return $this->header;
+        }
     }
 
     /**
