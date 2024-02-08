@@ -72,12 +72,12 @@ final class Request
 
     /**
      * Get request header
-     * @return array
+     * @return array|null
      */
-    public function getHeader(string $param = null): array
+    public function getHeader(string $param = null): array|null
     {
         if ($param !== null) {
-            return isset($this->header[$param]) !== false ? $this->header[$param] : false;
+            return isset($this->header[$param]) !== false ? $this->header[$param] : null;
         } else {
             return $this->header;
         }
