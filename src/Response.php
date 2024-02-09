@@ -176,6 +176,17 @@ final class Response
 
         // default data
         $data['Helper'] = new Helper();
+        if (isset($data['title']) === false) {
+            $data['title'] = '';
+        }
+        if (!empty($data['title']) &&  Helper::config('APPLY_APP_NAME_TO_TITLE', true) && defined('APP_NAME')) {
+            $data['title'] = $data['title'] . ' ' . Helper::config('APP_NAME_SEPARATOR') . ' ' . APP_NAME;
+        }
+
+
+        if (isset($data['description']) === false) {
+            $data['description'] = '';
+        }
 
         $viewPath = Helper::path('app/View' . DIRECTORY_SEPARATOR . str_replace(
             '.',
