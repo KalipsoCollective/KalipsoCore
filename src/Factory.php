@@ -124,6 +124,20 @@ final class Factory
         }
 
         /**
+         * Set default app name
+         **/
+        $appName = Helper::config('settings.name');
+        if (empty($appName)) {
+            $appName =
+                Helper::config('APP_NAME');
+
+            if (empty($appName)) {
+                $appName = 'KalipsoCore';
+            }
+        }
+        define('APP_NAME', $appName);
+
+        /**
          * Set default language
          **/
         $defaultLang = Helper::config('DEFAULT_LANGUAGE');
