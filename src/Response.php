@@ -160,10 +160,15 @@ final class Response
      * Render view
      * @param string $view
      * @param array $data
+     * @param string|array $layout
      * @return object
      */
-    public function render(string $view, array $data = []): object
+    public function render(string $view, array $data = [], $layout = null): object
     {
+
+        if (!empty($layout)) {
+            $this->setLayout($layout);
+        }
 
         if (!empty($this->layout)) {
             extract($data);
