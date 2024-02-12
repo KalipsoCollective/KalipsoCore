@@ -284,6 +284,13 @@ final class Router
             } else {
                 $this->route = $routePath;
                 $this->routeDetails = $route;
+                // lang
+                if (
+                    isset($this->attributes['lang']) !== false &&
+                    strpos((string)Helper::config('AVAILABLE_LANGUAGES'), (string)$this->attributes['lang']) !== false
+                ) {
+                    Helper::setLang($this->attributes['lang']);
+                }
             }
         } else {
             if (isset($this->routes[$this->endpoint][$this->method]) === false) {
