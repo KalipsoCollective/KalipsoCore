@@ -457,7 +457,13 @@ class Helper
     public static function lang(string $key): string
     {
 
-        global $kxLangParameters;
+        global
+            $kxLangParameters, $kxLang;
+
+        if (!is_array($kxLangParameters) && file_exists(self::path('app/Localization/' . $kxLang . '.php')) !== false) {
+            $kxLangParameters = require self::path('app/Localization/' . $kxLang . '.php');
+        }
+
 
         $key = strpos($key, '.') !== false ? explode('.', $key) : [$key];
 
@@ -1225,7 +1231,7 @@ class Helper
             foreach ($files as $file) {
 
                 $fileName = explode('.', $file)[0];
-                $kxConfigs[$fileName] = require_once $configPath . '/' . $file;
+                $kxConfigs[$fileName] = require $configPath . '/' . $file;
             }
         }
     }
@@ -1251,7 +1257,7 @@ class Helper
         global $kxLangParameters, $kxLang;
 
         if (file_exists(self::path('app/Localization/' . $langKey . '.php')) !== false) {
-            $kxLangParameters = require_once self::path('app/Localization/' . $langKey . '.php');
+            $kxLangParameters = require self::path('app/Localization/' . $langKey . '.php');
         }
         $kxLang = $langKey;
     }
