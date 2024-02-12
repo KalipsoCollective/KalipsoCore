@@ -201,7 +201,12 @@ final class Response
             if (empty($this->layout)) {
                 require($viewPath);
             } else {
-                foreach ($this->layout as $part) {
+                if (isset($this->layout['variables']) !== false) {
+                    $layout = $this->layout['variables'];
+                }
+
+
+                foreach ($this->layout['schema'] as $part) {
                     if ($part === 'x') {
                         require($viewPath);
                     } else {
