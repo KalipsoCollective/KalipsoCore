@@ -209,8 +209,14 @@ final class Router
                                         $attrVal = Helper::filter($explodedRequest[$pathIndex]);
                                         $this->attributes[$attrKey] = $attrVal;
 
-                                        if ($attrKey === 'lang') {
-                                            Helper::setLang($attrVal);
+                                        if (
+                                            $attrKey === 'lang'
+                                        ) {
+                                            if (strpos((string)Helper::config('AVAILABLE_LANGUAGES'), (string)$attrVal) !== false) {
+                                                Helper::setLang($attrVal);
+                                            } else {
+                                                break;
+                                            }
                                         }
                                     }
 
