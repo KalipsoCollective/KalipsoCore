@@ -205,7 +205,13 @@ final class Router
 
                                     if (in_array($pathBody, $expMatches) !== false) {
                                         // extract as attribute
-                                        $this->attributes[ltrim($pathBody, ':')] = Helper::filter($explodedRequest[$pathIndex]);
+                                        $attrKey = ltrim($pathBody, ':');
+                                        $attrVal = Helper::filter($explodedRequest[$pathIndex]);
+                                        $this->attributes[$attrKey] = $attrVal;
+
+                                        if ($attrKey === 'lang') {
+                                            Helper::setLang($attrVal);
+                                        }
                                     }
 
                                     if ($totalPath === ($pathIndex + 1)) {
