@@ -267,9 +267,10 @@ final class Router
 
                 if (!empty($route)) {
                     // method not allowed
+                    /*
                     if (isset($route[$this->method]) === false) {
                         throw new \Exception('Method not allowed: ' . $this->method, 405);
-                    }
+                    } */
                     $this->route = $routePath;
                     $this->routeDetails = $route;
                 }
