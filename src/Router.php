@@ -116,7 +116,7 @@ final class Router
      */
     public function getRouteDetails(): array|null
     {
-        return $this->routeDetails;
+        return isset($this->routeDetails[$this->method]) !== false ? $this->routeDetails[$this->method] :  $this->routeDetails;
     }
 
     /**
