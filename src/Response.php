@@ -205,6 +205,10 @@ final class Response
                     $layout = $this->layout['variables'];
                 }
 
+                if (isset($_SERVER['HTTP_X_PJAX'])) {
+                    echo '<title>' . $data['title'] . '</title>';
+                    $this->layout['schema'] = ['x'];
+                }
 
                 foreach ($this->layout['schema'] as $part) {
                     if ($part === 'x') {
