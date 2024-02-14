@@ -24,6 +24,10 @@ final class Factory
     protected $request;
     protected $response;
 
+    protected $defaultViewLayout;
+    protected $defaultViewFolder;
+    protected $errorPageContents;
+
     /**
      * Constructor
      * @return object
@@ -37,6 +41,17 @@ final class Factory
         define('KX_ROOT',  rtrim($_SERVER["DOCUMENT_ROOT"], '/') . '/');
         define('KX_CORE_VERSION', '0.0.1');
 
+        return $this;
+    }
+
+    /**
+     * Set error page contents
+     * @param string $content
+     * @return object
+     */
+    public function setErrorPageContents(array $content): object
+    {
+        $this->errorPageContents = $content;
         return $this;
     }
 
@@ -162,6 +177,9 @@ final class Factory
         return $this;
     }
 
+
+
+
     /**
      * Add route
      * @param string|array $method
@@ -242,6 +260,28 @@ final class Factory
     }
 
     /**
+     * Set default view folder
+     * @param string $folder
+     * @return object
+     */
+    public function setDefaultViewFolder(string $folder): object
+    {
+        $this->defaultViewFolder = $folder;
+        return $this;
+    }
+
+    /**
+     * Set default view layout
+     * @param string $layout
+     * @return object
+     */
+    public function setDefaultViewLayout(string $layout): object
+    {
+        $this->defaultViewLayout = $layout;
+        return $this;
+    }
+
+    /**
      * Run the application
      * @return void
      */
@@ -250,7 +290,8 @@ final class Factory
 
         $this->checkIPBlock();
         $this->startRateLimit();
-
+        $notFound = false;
+        $methodNotAllowed = false;
 
         // detect route
         $this->router->run();
@@ -311,7 +352,8 @@ final class Factory
                 }
             }
 
-            if ($next) {
+            if ($next && isset($this->router->getRouteDetails()['controller']) !== false) {
+
                 if ($this->router->getRouteDetails()['controller'] instanceof \Closure) {
                     $this->router->getRouteDetails()['controller'](
                         $this->request,
@@ -337,45 +379,56 @@ final class Factory
                         $this
                     );
                 }
-            }
 
-            $logOption = Helper::config('LOG_LEVEL');
-            if ($logOption === 'debug') {
-                $log = true;
-            } elseif ($logOption === 'error') {
-                if ($this->response->getStatusCode() >= 400) {
+                $logOption = Helper::config('LOG_LEVEL');
+                if ($logOption === 'debug') {
                     $log = true;
+                } elseif ($logOption === 'error') {
+                    if ($this->response->getStatusCode() >= 400) {
+                        $log = true;
+                    } else {
+                        $log = false;
+                    }
+                } elseif ($logOption === 'none') {
+                    $log = false;
                 } else {
                     $log = false;
                 }
-            } elseif ($logOption === 'none') {
-                $log = false;
+
+                // log  
+                if ($log) {
+
+                    $log = new Log();
+                    $log->save(
+                        $this->request,
+                        $this->response
+                    );
+                }
+
+                if ($redirect) {
+                    $this->response->runRedirection();
+                }
             } else {
-                $log = false;
-            }
 
-            // log  
-            if ($log) {
-
-                $log = new Log();
-                $log->save(
-                    $this->request,
-                    $this->response
-                );
-            }
-
-            if ($redirect) {
-                $this->response->runRedirection();
+                if ($this->router->methodNotAllowed) {
+                    $methodNotAllowed = true;
+                } else {
+                    $notFound = true;
+                }
             }
         } else {
 
             if ($this->router->methodNotAllowed) {
-                $this->response->setStatus(405);
-                $this->response->send('<pre>Method Not Allowed!</pre>');
+                $methodNotAllowed = true;
             } else {
-                $this->response->setStatus(404);
-                $this->response->send('<pre>Not Found!</pre>');
+                $notFound = true;
             }
+        }
+
+        if ($methodNotAllowed) {
+            $this->errorPage(405);
+        } elseif ($notFound) {
+            $this->errorPage(404);
         }
     }
 
@@ -478,7 +531,12 @@ final class Factory
             $this->response->setHeader('X-RateLimit-Reset: ' . $reset);
 
             if ($remaining < 0) {
-                throw new \Exception('Reset: ' . date('d.m.Y H:i:s', (int)$reset), 429, null);
+                $this->errorPage([
+                    'code' => 429,
+                    'title' => '429' . ' - ' . Helper::lang('error.too_many_requests'),
+                    'description' => Helper::lang('error.too_many_requests'),
+                    'subText' => Helper::lang('error.too_many_requests_sub_text') . ' ' . date('d.m.Y H:i:s', (int)$reset)
+                ]);
                 exit;
             }
         }
@@ -513,7 +571,7 @@ final class Factory
                 file_put_contents($jsonFile, json_encode($json, JSON_PRETTY_PRINT));
 
                 if (isset($json[$ip]) !== false) {
-                    throw new \Exception('IP blocked!', 403, null);
+                    $this->errorPage(403);
                     exit;
                 }
             } elseif ($blockDriver === 'redis' && class_exists('Redis')) {
@@ -534,10 +592,101 @@ final class Factory
                 $redis->close();
 
                 if ($isExists) {
-                    throw new \Exception('IP blocked!', 403, null);
+                    $this->errorPage(403);
                     exit;
                 }
             }
+        }
+    }
+
+    /**
+     * Error Page Output
+     * @param string|int|array $statusCodeOrData
+     * @return void
+     */
+    public function errorPage(string|int|array $statusCodeOrData)
+    {
+        if (is_array($statusCodeOrData)) {
+            $this->response->setStatus($statusCodeOrData['code']);
+            if ($this->defaultViewFolder) {
+                $this->response->render(
+                    $this->defaultViewFolder . '/error',
+                    $statusCodeOrData,
+                    $this->defaultViewLayout ?? null
+                );
+            } else {
+                $this->response->send('<pre>' . $statusCodeOrData['description'] . '</pre>');
+            }
+            return;
+        } else {
+            $statusCode = (string) $statusCodeOrData;
+        }
+
+        $defaultErrorPageContents = [
+            '400' => [
+                'code' => 400,
+                'title' => '400 - ' . Helper::lang('error.bad_request'),
+                'description' => Helper::lang('error.bad_request'),
+                'subText' => Helper::lang('error.bad_request_sub_text')
+            ],
+            '401' => [
+                'code' => 401,
+                'title' => '401 - ' . Helper::lang('error.unauthorized'),
+                'description' => Helper::lang('error.unauthorized'),
+                'subText' => Helper::lang('error.unauthorized_sub_text')
+            ],
+            '403' => [
+                'code' => 403,
+                'title' => '403 - ' . Helper::lang('error.forbidden'),
+                'description' => Helper::lang('error.forbidden'),
+                'subText' => Helper::lang('error.forbidden_sub_text')
+            ],
+            '404' => [
+                'code' => 404,
+                'title' => '404 - ' . Helper::lang('error.not_found'),
+                'description' => Helper::lang('error.not_found'),
+                'subText' => Helper::lang('error.not_found_sub_text'),
+                'link' => [
+                    'text' => Helper::lang('base.back_to_home'),
+                    'url' => Helper::base()
+                ]
+            ],
+            '405' => [
+                'code' => 405,
+                'title' => '405 - ' . Helper::lang('error.method_not_allowed'),
+                'description' => Helper::lang('error.method_not_allowed'),
+                'subText' => Helper::lang('error.method_not_allowed_sub_text')
+            ],
+            '500' => [
+                'code' => 500,
+                'title' => '500 - ' . Helper::lang('error.internal_server_error'),
+                'description' => Helper::lang('error.internal_server_error'),
+                'subText' => Helper::lang('error.internal_server_error_sub_text')
+            ],
+            '503' => [
+                'code' => 503,
+                'title' => '503 - ' . Helper::lang('error.service_unavailable'),
+                'description' => Helper::lang('error.service_unavailable'),
+                'subText' => Helper::lang('error.service_unavailable_sub_text')
+            ],
+        ];
+        $pageData = null;
+        if (isset($this->errorPageContents[$statusCode])) {
+            $pageData = $this->errorPageContents[$statusCode];
+        } else {
+            $pageData = $defaultErrorPageContents[$statusCode];
+        }
+
+        $this->response->setStatus($pageData['code']);
+
+        if ($this->defaultViewFolder) {
+            $this->response->render(
+                $this->defaultViewFolder . '/error',
+                $pageData,
+                $this->defaultViewLayout ?? 'error'
+            );
+        } else {
+            $this->response->send('<pre>' . $pageData['description'] . '</pre>');
         }
     }
 }
