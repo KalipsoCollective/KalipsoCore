@@ -73,16 +73,15 @@ final class Request
     /**
      * Get request header
      * @param string $key
-     * @return array|null
+     * @return array|string|null
      */
     public function getHeader(string $key = ''): array|string|null
     {
         $return = null;
-        $headers = json_decode(json_encode($this->header), true);
         if (!empty($key)) {
-            $return = isset($headers[$key]) !== false ? $headers[$key] : null;
+            $return = isset($this->header[$key]) !== false ? $this->header[$key] : null;
         } else {
-            $return = $headers;
+            $return = $this->header;
         }
         return $return;
     }
