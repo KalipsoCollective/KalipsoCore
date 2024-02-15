@@ -111,6 +111,37 @@ final class Request
     }
 
     /**
+     * Get file params
+     * @return array
+     */
+    public function getFileParams(): array
+    {
+        // match if is multiple
+        $return = [];
+        if (isset($_FILES) !== false && !empty($_FILES)) {
+            foreach ($_FILES as $key => $fileDatas) {
+                if (is_array($fileDatas['name'])) {
+                    $temp = [];
+                    foreach ($_FILES[$key] as $k => $l) {
+                        foreach ($l as $i => $v) {
+                            if (!array_key_exists($i, $temp)) {
+                                $temp[$i] = [];
+                            }
+                            $temp[$i][$k] = $v;
+                        }
+                    }
+                    if (!empty($temp)) {
+                        $return[$key] = $temp;
+                    }
+                } elseif ($fileDatas['error'] === 0) {
+                    $return[$key] = $fileDatas;
+                }
+            }
+        }
+        return $return;
+    }
+
+    /**
      * Get request params
      * @return array
      */
