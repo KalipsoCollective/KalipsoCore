@@ -18,6 +18,7 @@ namespace KX\Core;
 
 use KX\Core\Request;
 use KX\Core\Response;
+use KX\Core\Helper;
 
 final class Exception
 {
