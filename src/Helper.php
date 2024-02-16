@@ -444,6 +444,10 @@ class Helper
                         break;
                 }
             }
+
+            if (empty($return[$name])) {
+                unset($return[$name]);
+            }
         }
         return $return;
     }
