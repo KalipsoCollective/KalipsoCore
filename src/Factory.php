@@ -462,7 +462,10 @@ final class Factory
     {
         $limit = (int) Helper::config('RATE_LIMIT');
         $rateDriver = Helper::config('RATE_LIMIT_DRIVER');
-        if ($limit && in_array($rateDriver, ['file', 'redis']) && $this->request->getRequestMethod() === 'GET') {
+        if ($limit && in_array($rateDriver, ['file', 'redis']) && in_array(
+            $this->request->getRequestMethod(),
+            ['GET', 'POST', 'PUT']
+        )) {
 
             $ip = Helper::getIp();
 
@@ -531,12 +534,28 @@ final class Factory
             $this->response->setHeader('X-RateLimit-Reset: ' . $reset);
 
             if ($remaining < 0) {
-                $this->errorPage([
-                    'code' => 429,
-                    'title' => '429' . ' - ' . Helper::lang('error.too_many_requests'),
-                    'description' => Helper::lang('error.too_many_requests'),
-                    'subText' => Helper::lang('error.too_many_requests_sub_text') . ' ' . date('d.m.Y H:i:s', (int)$reset)
-                ]);
+                // accept
+                if ($this->request->getHeader('Accept') === 'application/json') {
+                    $this->response->json([
+                        'status' => false,
+                        'notify' => [
+                            [
+                                'type' => 'error',
+                                'message' => Helper::lang('error.too_many_requests') . '<br>' . Helper::lang('error.too_many_requests_sub_text') . ' ' . date('d.m.Y H:i:s', (int)$reset)
+                            ]
+                        ],
+                        'error' => [
+                            'code' => 429,
+                        ]
+                    ], 429);
+                } else {
+                    $this->errorPage([
+                        'code' => 429,
+                        'title' => '429' . ' - ' . Helper::lang('error.too_many_requests'),
+                        'description' => Helper::lang('error.too_many_requests'),
+                        'subText' => Helper::lang('error.too_many_requests_sub_text') . ' ' . date('d.m.Y H:i:s', (int)$reset)
+                    ]);
+                }
                 exit;
             }
         }
@@ -612,7 +631,7 @@ final class Factory
                 $this->response->render(
                     $this->defaultViewFolder . '/error',
                     $statusCodeOrData,
-                    $this->defaultViewLayout ?? null
+                    $this->defaultViewLayout ?? 'error'
                 );
             } else {
                 $this->response->send('<pre>' . $statusCodeOrData['description'] . '</pre>');
