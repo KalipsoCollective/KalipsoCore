@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace KX\Core;
 
+use KX\Core\Helper;
+
 final class Request
 {
 
