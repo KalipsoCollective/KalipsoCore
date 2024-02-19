@@ -102,6 +102,10 @@ final class Response
         foreach ($this->responseHeaders as $header) {
             header($header);
         }
+
+        if ($this->redirection) {
+            $this->runRedirection();
+        }
         return $this;
     }
 
@@ -251,9 +255,9 @@ final class Response
      * @param string $url
      * @param int $statusCode
      * @param int $seconds
-     * @return void
+     * @return object
      */
-    public function redirect(string $url, int $statusCode = 302, $seconds = 0): void
+    public function redirect(string $url, int $statusCode = 302, $seconds = 0): object
     {
         $this->redirection = [
             'url' => $url,
@@ -261,6 +265,7 @@ final class Response
             'seconds' => $seconds
         ];
         $this->statusCode = $statusCode;
+        return $this;
     }
 
     /**
@@ -292,17 +297,19 @@ final class Response
 
     /**
      * Run redirection
-     * @return void
+     * @return object
      */
-    public function runRedirection(): void
+    public function runRedirection(): object
     {
         if ($this->redirection) {
             if ($this->redirection['seconds'] > 0) {
                 header('Refresh: ' . $this->redirection['seconds'] . '; url=' . $this->redirection['url']);
             } else {
                 header('Location: ' . $this->redirection['url'], true, $this->redirection['statusCode']);
+                exit;
             }
-            exit;
         }
+        $this->redirection = null;
+        return $this;
     }
 }
