@@ -250,12 +250,15 @@ final class Response
      * Redirect
      * @param string $url
      * @param int $statusCode
+     * @param int $seconds
+     * @return void
      */
-    public function redirect(string $url, int $statusCode = 302): void
+    public function redirect(string $url, int $statusCode = 302, $seconds = 0): void
     {
         $this->redirection = [
             'url' => $url,
-            'statusCode' => $statusCode
+            'statusCode' => $statusCode,
+            'seconds' => $seconds
         ];
         $this->statusCode = $statusCode;
     }
@@ -294,7 +297,11 @@ final class Response
     public function runRedirection(): void
     {
         if ($this->redirection) {
-            header('Location: ' . $this->redirection['url'], true, $this->redirection['statusCode']);
+            if ($this->redirection['seconds'] > 0) {
+                header('Refresh: ' . $this->redirection['seconds'] . '; url=' . $this->redirection['url']);
+            } else {
+                header('Location: ' . $this->redirection['url'], true, $this->redirection['statusCode']);
+            }
             exit;
         }
     }
