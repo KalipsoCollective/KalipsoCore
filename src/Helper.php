@@ -1421,4 +1421,24 @@ class Helper
             return isset($kxUser[$key]) !== false ? $kxUser[$key] : null;
         }
     }
+
+    /**
+     * Get auth token
+     * @return string|null
+     */
+    public static function authToken(): ?string
+    {
+
+        if (self::config('AUTH_STRATEGY') === 'session') {
+            $authToken = isset($_COOKIE[self::config('SESSION_NAME')]) !== false ?
+                $_COOKIE[self::config('SESSION_NAME')] :
+                null;
+        } else {
+            $authToken = isset($_SERVER['HTTP_AUTHORIZATION']) !== false ?
+                $_SERVER['HTTP_AUTHORIZATION'] :
+                null;
+        }
+
+        return $authToken;
+    }
 }
