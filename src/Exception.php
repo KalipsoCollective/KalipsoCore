@@ -41,7 +41,7 @@ final class Exception
     {
 
         $error = error_get_last();
-        if (!is_null($error) and is_array($error) and $error["type"] == E_ERROR) {
+        if (!is_null($error) && is_array($error) && $error["type"] == E_ERROR) {
             self::errorHandler($error["type"], $error["message"], $error["file"], $error["line"]);
         }
     }
@@ -102,7 +102,7 @@ final class Exception
             header($_SERVER['SERVER_PROTOCOL'] . ' 500 Internal Server Error', true, 500);
         }
 
-        if (isset($_SERVER['HTTP_ACCEPT']) !== false and $_SERVER['HTTP_ACCEPT'] === 'application/json') {
+        if (isset($_SERVER['HTTP_ACCEPT']) !== false && $_SERVER['HTTP_ACCEPT'] === 'application/json') {
             header('Content-Type: application/json, charset=utf-8');
             echo json_encode([
                 'error' => htmlspecialchars($output)

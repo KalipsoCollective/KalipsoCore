@@ -157,7 +157,7 @@ class Model extends Pdox
         $allTables->execute();
         $allTables = $allTables->fetchAll(PDO::FETCH_COLUMN);
 
-        if (is_array($allTables) and count($allTables)) {
+        if (is_array($allTables) && count($allTables)) {
 
             $dropSql = '';
             foreach ($allTables as $table) {

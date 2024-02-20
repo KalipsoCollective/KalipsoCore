@@ -54,7 +54,7 @@ class Helper
                 }
 
                 $path .= $folder . '/';
-                if ($createDir and !is_dir($path)) {
+                if ($createDir && !is_dir($path)) {
 
                     mkdir($path, 0755);
                 }
@@ -223,7 +223,7 @@ class Helper
     public static function input($extract, $from): array
     {
         $return = [];
-        if (is_array($extract) and is_array($from)) {
+        if (is_array($extract) && is_array($from)) {
             foreach ($extract as $key => $value) {
                 if (isset($from[$key]) !== false) $return[$key] = self::filter($from[$key], $value);
                 else $return[$key] = self::filter(null, $value);
@@ -275,7 +275,7 @@ class Helper
                 case 'html':
                 case 'nulled_html':
                     $data = htmlspecialchars(trim((string)$data));
-                    if ($parameter === 'nulled_html' and trim(strip_tags(htmlspecialchars_decode((string)$data))) === '') {
+                    if ($parameter === 'nulled_html' && trim(strip_tags(htmlspecialchars_decode((string)$data))) === '') {
                         $data = null;
                     }
                     break;
@@ -483,7 +483,7 @@ class Helper
             503 => 'Service Unavailable'
         ];
 
-        if (is_numeric($code) and isset($httpCodes[(int)$code]) !== false) {
+        if (is_numeric($code) && isset($httpCodes[(int)$code]) !== false) {
 
             header($_SERVER["SERVER_PROTOCOL"] . ' ' . $code . ' ' . $httpCodes[(int) $code]);
         } else {
@@ -685,10 +685,10 @@ class Helper
         if (is_array($token)) {
 
             if (
-                (isset($token['cookie']) !== false and $token['cookie'] == $_COOKIE[self::config('SESSION_NAME')]) and
-                (isset($token['timeout']) !== false and $token['timeout'] >= time()) and
-                (isset($token['header']) !== false and $token['header'] == self::getUserAgent()) and
-                (isset($token['ip']) !== false and $token['ip'] == self::getIp())
+                (isset($token['cookie']) !== false && $token['cookie'] == $_COOKIE[self::config('SESSION_NAME')]) &&
+                (isset($token['timeout']) !== false && $token['timeout'] >= time()) &&
+                (isset($token['header']) !== false && $token['header'] == self::getUserAgent()) &&
+                (isset($token['ip']) !== false && $token['ip'] == self::getIp())
 
             ) {
                 $return = true;
@@ -708,9 +708,9 @@ class Helper
 
         global $kxRequestUri;
 
-        if (is_null($route) and $kxRequestUri == '') {
+        if (is_null($route) && $kxRequestUri == '') {
             return ' active';
-        } elseif (!is_null($route) and trim($route, '/') == $kxRequestUri) {
+        } elseif (!is_null($route) && trim($route, '/') == $kxRequestUri) {
             return ' active';
         }
     }
@@ -725,7 +725,7 @@ class Helper
     {
 
         $return = null;
-        if (is_string($key) and isset($_SESSION[$key]) !== false) {
+        if (is_string($key) && isset($_SESSION[$key]) !== false) {
             $return = $_SESSION[$key];
         } elseif (is_null($key)) {
             $return = $_SESSION;
@@ -1146,7 +1146,7 @@ class Helper
         if (isset($parameters[$name]) !== false) {
             $return = $parameters[$name];
 
-            if ($type == 'date' and !is_null($return)) {
+            if ($type == 'date' && !is_null($return)) {
                 $return = date('Y-m-d', (int) $return);
             }
 
