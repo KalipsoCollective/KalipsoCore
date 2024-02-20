@@ -1437,6 +1437,11 @@ class Helper
             $authToken = isset($_SERVER['HTTP_AUTHORIZATION']) !== false ?
                 $_SERVER['HTTP_AUTHORIZATION'] :
                 null;
+
+            if ($authToken) {
+                $authToken = explode(' ', $authToken);
+                $authToken = isset($authToken[1]) !== false ? $authToken[1] : null;
+            }
         }
 
         return $authToken;
