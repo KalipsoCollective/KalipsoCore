@@ -61,6 +61,7 @@ final class Factory
      */
     public function setup(): object
     {
+        global $kxAuthToken;
 
         /**
          * Shutdown function registration
@@ -173,7 +174,6 @@ final class Factory
         if (Helper::config('VISIBLE_POWERED_BY', true)) {
             $this->response->setHeader('X-Powered-By: KalipsoCore ' . KX_CORE_VERSION);
         }
-        global $kxAuthToken;
         $kxAuthToken = Helper::authToken();
 
         return $this;
@@ -211,9 +211,10 @@ final class Factory
      * Add route group
      * @param array $mainRoute
      * @param array $subRoutes
+     * @param bool $effectAllSubRoutes
      * @return object
      */
-    public function routeGroup(array $mainRoute, array $subRoutes): object
+    public function routeGroup(array $mainRoute, array $subRoutes, bool $effectAllSubRoutes = false): object
     {
 
         // add main route
@@ -224,8 +225,15 @@ final class Factory
         foreach ($subRoutes as $subRoute) {
 
             $subMiddlewares = isset($subRoute[3]) !== false ? $subRoute[3] : [];
-            if (isset($mainRoute[3]) !== false) {
-                $subMiddlewares = array_merge($subMiddlewares, $subMiddlewares);
+            if (is_string($subMiddlewares)) {
+                $subMiddlewares = [$subMiddlewares];
+            }
+            if ($effectAllSubRoutes &&  isset($mainRoute[3]) !== false) {
+                $mainMiddlewares = $mainRoute[3];
+                if (is_string($mainMiddlewares)) {
+                    $mainMiddlewares = [$mainMiddlewares];
+                }
+                $subMiddlewares = array_merge($mainMiddlewares, $subMiddlewares);
             }
 
             $subRoute[1] = $mainRoute[1] . '/' . trim($subRoute[1], '/');
