@@ -389,8 +389,6 @@ final class Factory
                     } else {
                         $log = false;
                     }
-                } elseif ($logOption === 'none') {
-                    $log = false;
                 } else {
                     $log = false;
                 }
