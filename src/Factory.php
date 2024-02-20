@@ -173,6 +173,8 @@ final class Factory
         if (Helper::config('VISIBLE_POWERED_BY', true)) {
             $this->response->setHeader('X-Powered-By: KalipsoCore ' . KX_CORE_VERSION);
         }
+        global $kxAuthToken;
+        $kxAuthToken = Helper::authToken();
 
         return $this;
     }
