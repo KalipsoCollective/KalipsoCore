@@ -1407,19 +1407,27 @@ class Helper
     }
 
     /**
-     * Get user data
+     * Get session data
+     * @param string $section
      * @param string $key
      * @return mixed
      */
-    public static function userData($key = null)
+    public static function sessionData(string $section = null, string $key = null): string|null|object
     {
-        global $kxUser;
+        global $kxSession;
 
-        if (is_null($key)) {
-            return $kxUser;
+        $return = null;
+        if (is_null($section)) {
+            $return = $kxSession;
         } else {
-            return isset($kxUser[$key]) !== false ? $kxUser[$key] : null;
+            $return = isset($kxSession->{$section}) !== false ? $kxSession->{$section} : null;
+
+            if (!is_null($key)) {
+                $return = isset($kxSession->{$section}->{$key}) !== false ? $kxSession->{$section}->{$key} : null;
+            }
         }
+
+        return $return;
     }
 
     /**
