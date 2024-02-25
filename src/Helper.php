@@ -1427,6 +1427,25 @@ class Helper
             }
         }
 
+        if ($section == 'user' && is_null($key)) {
+            $return->name = !empty(trim($return->f_name . ' ' . $return->l_name)) ? trim($return->f_name . ' ' . $return->l_name) : $return->u_name;
+        }
+
+        return $return;
+    }
+
+    /**
+     * first letters
+     * @param string $text
+     * @return string
+     */
+    public static function firstLetters(string $text): string
+    {
+        $text = explode(' ', $text);
+        $return = '';
+        foreach ($text as $word) {
+            $return .= mb_strtoupper($word[0]);
+        }
         return $return;
     }
 
