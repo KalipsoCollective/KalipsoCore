@@ -700,19 +700,23 @@ class Helper
 
     /**
      * Current Page Class
-     * @param string|null $route  Route
-     * @return string|void
+     * @param string $route  Route
+     * @param string $class class
+     * @param bool $returnAsBool return as boolean
+     * @return string|bool
      */
-    public static function currentPage($route = null)
+    public static function currentPage($route = '', $class = 'active', $returnAsBool = false): string|bool
     {
 
         global $kxRequestUri;
 
-        if (is_null($route) && $kxRequestUri == '') {
-            return ' active';
-        } elseif (!is_null($route) && trim($route, '/') == $kxRequestUri) {
-            return ' active';
+        $req = trim($kxRequestUri, '/');
+        $route = trim($route, '/');
+
+        if ($req === $route) {
+            return $returnAsBool ? true : $class;
         }
+        return $returnAsBool ? false : '';
     }
 
     /**
