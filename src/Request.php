@@ -33,6 +33,8 @@ final class Request
     public function __construct()
     {
 
+        global $kxRequestUri;
+
         $req = parse_url(Helper::base($_SERVER['REQUEST_URI']));
 
         $this->request = $_REQUEST;
@@ -45,7 +47,7 @@ final class Request
         $this->middlewareParams = [];
         $this->routerParams = (object)[];
 
-
+        $kxRequestUri = $this->requestUri;
         return $this;
     }
 
