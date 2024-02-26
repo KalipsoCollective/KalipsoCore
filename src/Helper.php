@@ -1435,6 +1435,23 @@ class Helper
     }
 
     /**
+     * Authorization
+     * @param string $endpoint
+     * @return bool
+     */
+    public static function authorization(string $endpoint): bool
+    {
+        global $kxSession;
+
+        $return = false;
+        if (isset($kxSession->role) !== false && isset($kxSession->role->routes) !== false && in_array($endpoint, $kxSession->role->routes) !== false) {
+            $return = true;
+        }
+
+        return $return;
+    }
+
+    /**
      * first letters
      * @param string $text
      * @return string
