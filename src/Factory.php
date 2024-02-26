@@ -314,6 +314,11 @@ final class Factory
             if (isset($this->router->getRouteDetails()['middlewares'])) {
                 foreach ($this->router->getRouteDetails()['middlewares'] as $m) {
 
+                    $this->request->setRouteDetails(
+                        $this->router->getRoute(),
+                        $this->router->getRouteDetails(),
+                    );
+
                     unset($middleware);
                     if ($m instanceof \Closure) {
                         $middleware = $m(
@@ -335,7 +340,8 @@ final class Factory
                         $m = new $middlewareStr[0]();
                         $middleware = $m->{$middlewareStr[1]}(
                             $this->request,
-                            $this->response
+                            $this->response,
+                            $this
                         );
                     }
 
