@@ -22,6 +22,7 @@ final class Request
     private $postParams;
     private $header;
     private $middlewareParams;
+    private $routerParams;
 
 
 
@@ -32,14 +33,17 @@ final class Request
     public function __construct()
     {
 
+        $req = parse_url(Helper::base($_SERVER['REQUEST_URI']));
+
         $this->request = $_REQUEST;
-        $this->requestUri = $_SERVER['REQUEST_URI'];
+        $this->requestUri = $req['path'] ?? $_SERVER['REQUEST_URI'];
         $this->requestMethod = $_SERVER['REQUEST_METHOD'];
         $this->queryString = $_SERVER['QUERY_STRING'];
         $this->header = getallheaders();
         $this->getParams = $_GET;
         $this->postParams = $_POST;
         $this->middlewareParams = [];
+        $this->routerParams = (object)[];
 
 
         return $this;
@@ -182,5 +186,29 @@ final class Request
     {
         $this->middlewareParams = $params;
         return $this;
+    }
+
+    /**
+     * Set route details
+     * @param array $routeDetails 
+     * @param string $route
+     * @return object
+     */
+    public function setRouteDetails(string $route, array $routeDetails): object
+    {
+        $this->routerParams = (object)[
+            'route' => $route,
+            'details' => $routeDetails
+        ];
+        return $this;
+    }
+
+    /**
+     * Get route details
+     * @return object
+     */
+    public function getRouteDetails(): object
+    {
+        return $this->routerParams;
     }
 }
