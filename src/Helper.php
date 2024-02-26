@@ -1443,6 +1443,8 @@ class Helper
     {
         global $kxSession;
 
+        $endpoint = str_replace('/', '.', trim($endpoint, '/'));
+
         $return = false;
         if (isset($kxSession->role) !== false && isset($kxSession->role->routes) !== false && in_array($endpoint, $kxSession->role->routes) !== false) {
             $return = true;
