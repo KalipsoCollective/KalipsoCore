@@ -705,7 +705,7 @@ class Helper
      * @param bool $returnAsBool return as boolean
      * @return string|bool
      */
-    public static function currentPage($route = '', $class = 'active', $returnAsBool = false): string|bool
+    public static function currentPage($route = '', $class = ' active', $returnAsBool = false): string|bool
     {
 
         global $kxRequestUri;
