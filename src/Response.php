@@ -210,7 +210,7 @@ final class Response
 
                 if (isset($_SERVER['HTTP_X_PJAX'])) {
                     echo '<title>' . $data['title'] . '</title>';
-                    $this->layout['schema'] = ['x'];
+                    $this->layout['schema'] = isset($this->layout['ajaxLayout']) !== false ? $this->layout['ajaxLayout'] : ['x'];
                 }
 
                 foreach ($this->layout['schema'] as $part) {
