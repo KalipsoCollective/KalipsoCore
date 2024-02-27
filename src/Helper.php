@@ -1417,7 +1417,7 @@ class Helper
      * @param string $key
      * @return mixed
      */
-    public static function sessionData(string $section = null, string $key = null): string|null|object
+    public static function sessionData(string $section = null, string $key = null): mixed
     {
         global $kxSession;
 
@@ -1428,11 +1428,11 @@ class Helper
             $return = isset($kxSession->{$section}) !== false ? $kxSession->{$section} : null;
 
             if (!is_null($key)) {
-                $return = isset($kxSession->{$section}->{$key}) !== false ? $kxSession->{$section}->{$key} : null;
+                $return = isset($return->{$key}) !== false ? $return->{$key} : null;
             }
         }
 
-        if ($section == 'user' && is_null($key)) {
+        if ($section === 'user' && is_null($key)) {
             $return->name = !empty(trim($return->f_name . ' ' . $return->l_name)) ? trim($return->f_name . ' ' . $return->l_name) : $return->u_name;
         }
 
