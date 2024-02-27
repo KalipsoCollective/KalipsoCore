@@ -130,6 +130,7 @@ final class Response
         if (!empty($body)) {
             $this->setBody($body);
         }
+        ob_start();
 
         $this->applyHeaders();
 
