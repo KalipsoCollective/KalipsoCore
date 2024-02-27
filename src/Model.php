@@ -286,7 +286,7 @@ class Model extends Pdox
                 // created
                 if ($this->created) {
                     $query .= '\'' . time() . '\',';
-                    $query .= '\'' . (Helper::userData('id') ?? 0) . '\',';
+                    $query .= '\'' . (Helper::sessionData('user', 'id') ?? 0) . '\',';
                 }
 
                 $query = rtrim($query, ',') . '),';
@@ -422,7 +422,7 @@ class Model extends Pdox
         if ($this->created) {
 
             $data['created_at'] = isset($data['created_at']) === false ? time() : $data['created_at'];
-            $data['created_by'] = isset($data['created_by']) === false ? (Helper::userData('id') ?? 0) : $data['created_by'];
+            $data['created_by'] = isset($data['created_by']) === false ? (Helper::sessionData('user', 'id') ?? 0) : $data['created_by'];
         }
 
         return parent::insert($data, $type);
@@ -440,7 +440,7 @@ class Model extends Pdox
         if ($this->updated) {
 
             $data['updated_at'] = isset($data['updated_at']) === false ? time() : $data['updated_at'];
-            $data['updated_by'] = isset($data['updated_by']) === false ? (Helper::userData('id') ?? 0) : $data['updated_by'];
+            $data['updated_by'] = isset($data['updated_by']) === false ? (Helper::sessionData('user', 'id') ?? 0) : $data['updated_by'];
         }
 
         return parent::update($data, $type);
