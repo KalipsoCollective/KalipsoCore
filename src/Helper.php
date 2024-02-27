@@ -1382,6 +1382,7 @@ class Helper
             $kxLangParameters = require self::path('app/Localization/' . $langKey . '.php');
         }
         $kxLang = $langKey;
+        $_SESSION['KX_LANG'] = $langKey;
     }
 
     public static function getClasses($path)
