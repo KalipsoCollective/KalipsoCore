@@ -360,6 +360,7 @@ final class Factory
                     $this->request->setRouteDetails(
                         $this->router->getRoute(),
                         $this->router->getRouteDetails(),
+                        $this->router->getAttributes()
                     );
 
                     unset($middleware);
