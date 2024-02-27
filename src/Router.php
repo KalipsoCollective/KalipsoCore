@@ -29,6 +29,7 @@ final class Router
      */
     public function __construct()
     {
+        global $kxRequestUri;
 
         $url = parse_url($_SERVER['REQUEST_URI']);
         $this->endpoint = '/' . trim(
@@ -38,6 +39,8 @@ final class Router
         $this->method = strtoupper(
             empty($_SERVER['REQUEST_METHOD']) ? 'GET' : $_SERVER['REQUEST_METHOD']
         );
+
+        $kxRequestUri = $this->endpoint;
 
         return $this;
     }
