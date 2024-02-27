@@ -61,7 +61,7 @@ final class Factory
      */
     public function setup(): object
     {
-        global $kxAuthToken;
+        global $kxAuthToken, $kxAvailableLanguages;
 
         /**
          * Shutdown function registration
@@ -154,12 +154,55 @@ final class Factory
         define('APP_NAME', $appName);
 
         /**
-         * Set default language
+         * Set language
          **/
-        $defaultLang = Helper::config('DEFAULT_LANGUAGE');
-        if (!empty($defaultLang)) {
-            Helper::setLang((string) $defaultLang);
+
+        $kxAvailableLanguages = explode(',', (string)Helper::config('AVAILABLE_LANGUAGES'));
+        if (empty($kxAvailableLanguages)) {
+            $kxAvailableLanguages = ['en'];
         }
+
+        $setLang = null;
+
+        // header X-Language
+        $langSetted = false;
+        if (isset($_SERVER['HTTP_X_LANGUAGE']) !== false) {
+            $lang = $_SERVER['HTTP_X_LANGUAGE'];
+            if (in_array($lang, $kxAvailableLanguages)) {
+                $langSetted = true;
+                $setLang = $lang;
+            }
+        }
+
+        // get 
+        if (!$langSetted && isset($_GET['lang']) !== false) {
+            $lang = $_GET['lang'];
+            if (in_array($lang, $kxAvailableLanguages)) {
+                $langSetted = true;
+                $setLang = $lang;
+            }
+        }
+
+        // session
+        if (!$langSetted && isset($_SESSION['KX_LANG']) !== false) {
+            $lang = $_SESSION['KX_LANG'];
+            if (in_array($lang, $kxAvailableLanguages)) {
+                $langSetted = true;
+                $setLang = $lang;
+            }
+        }
+
+        // default
+        $defaultLang = Helper::config('DEFAULT_LANGUAGE');
+        if (!$langSetted && !empty($defaultLang)) {
+            $setLang = $defaultLang;
+        }
+
+        // set session
+        if ($setLang) {
+            Helper::setLang($setLang);
+        }
+
 
         /**
          * Set Request and Response
