@@ -372,37 +372,37 @@ class Helper
                         break;
 
                     case 'min':
-                        if (strlen($value) < $param) {
+                        if (strlen((string)$value) < $param) {
                             $return[$name][] = self::lang('form.min_validation', ['min' => $param]);
                         }
                         break;
 
                     case 'max':
-                        if (strlen($value) > $param) {
+                        if (strlen((string)$value) > $param) {
                             $return[$name][] = self::lang('form.max_validation', ['max' => $param]);
                         }
                         break;
 
                     case 'email':
-                        if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                        if (!filter_var((string)$value, FILTER_VALIDATE_EMAIL)) {
                             $return[$name][] = self::lang('form.email_validation');
                         }
                         break;
 
                     case 'url':
-                        if (!filter_var($value, FILTER_VALIDATE_URL)) {
+                        if (!filter_var((string)$value, FILTER_VALIDATE_URL)) {
                             $return[$name][] = self::lang('form.url_validation');
                         }
                         break;
 
                     case 'ip':
-                        if (!filter_var($value, FILTER_VALIDATE_IP)) {
+                        if (!filter_var((string)$value, FILTER_VALIDATE_IP)) {
                             $return[$name][] = self::lang('form.ip_validation');
                         }
                         break;
 
                     case 'regex':
-                        if (!preg_match($param, $value)) {
+                        if (!preg_match($param, (string)$value)) {
                             $return[$name][] = self::lang('form.regex_validation');
                         }
                         break;
