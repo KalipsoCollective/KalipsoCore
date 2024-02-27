@@ -194,13 +194,15 @@ final class Request
      * Set route details
      * @param array $routeDetails 
      * @param string $route
+     * @param array $routeAttributes
      * @return object
      */
-    public function setRouteDetails(string $route, array $routeDetails): object
+    public function setRouteDetails(string $route, array $routeDetails, array $routeAttributes): object
     {
         $this->routerParams = (object)[
             'route' => $route,
-            'details' => $routeDetails
+            'details' => $routeDetails,
+            'attributes' => $routeAttributes
         ];
         return $this;
     }
