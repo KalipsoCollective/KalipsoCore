@@ -34,12 +34,17 @@ final class Factory
      */
     public function __construct()
     {
+        global $kxVariables;
         /**
          * Basic constants
          **/
         define('KX_START', microtime(true)); // We can use it for the execution time recorded in the log.
         define('KX_ROOT',  rtrim($_SERVER["DOCUMENT_ROOT"], '/') . '/');
         define('KX_CORE_VERSION', '0.0.1');
+
+        if (file_exists(Helper::path('app/External/variables.php'))) {
+            $kxVariables = require Helper::path('app/External/variables.php');
+        }
 
         return $this;
     }
