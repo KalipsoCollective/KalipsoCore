@@ -37,6 +37,8 @@ class Model extends Pdox
             'cachedir'  => Helper::path('app/Storage/db_cache/')
         ]);
 
+        // set timezone
+        $this->exec('SET GLOBAL time_zone = "' . date('e') . '";');
         $this->table($this->table);
     }
 
