@@ -121,6 +121,9 @@ final class Factory
          **/
         if (Helper::config('AUTH_STRATEGY') === 'session') {
 
+            // session maxlife (default 30 days)
+            ini_set('session.gc_maxlifetime', (60 * 60 * 24 * 30));
+
             /**
              * Set session name
              **/
