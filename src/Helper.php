@@ -241,7 +241,6 @@ class Helper
      */
     public static function filter($data = null, $parameter = 'text')
     {
-
         /**
          *  Available Parameters
          *  
@@ -270,30 +269,32 @@ class Helper
             $data = $_data;
         } else {
 
+            $nulled = false;
+            if (strpos($parameter, 'nulled_') !== false) {
+                $nulled = true;
+                $parameter = str_replace('nulled_', '', $parameter);
+            }
+
             switch ($parameter) {
 
                 case 'html':
-                case 'nulled_html':
                     $data = htmlspecialchars(trim((string)$data));
-                    if ($parameter === 'nulled_html' && trim(strip_tags(htmlspecialchars_decode((string)$data))) === '') {
-                        $data = null;
+                    if ($nulled) {
+                        $data = trim(strip_tags(htmlspecialchars_decode((string)$data)));
                     }
                     break;
 
                 case 'check':
                 case 'check_as_boolean':
-
+                    $nulled = false;
                     $data = ($data) ? 'on' : 'off';
-                    if ($parameter === 'check_as_boolean')
+                    if ($parameter === 'check_as_boolean') {
                         $data = $data === 'on' ? true : false;
-
+                    }
                     break;
 
                 case 'int':
-                case 'nulled_int':
                     $data = (int)$data;
-                    if ($parameter === 'nulled_int')
-                        $data = empty($data) ? null : $data;
                     break;
 
                 case 'float':
@@ -301,20 +302,15 @@ class Helper
                     break;
 
                 case 'password':
-                case 'nulled_password':
                     $data = password_hash(trim((string)$data), PASSWORD_DEFAULT);
-                    if ($parameter === 'nulled_password') {
-                        $data = empty($data) ? null : $data;
-                    }
                     break;
 
                 case 'date':
                     $data = strtotime($data . ' 12:00');
                     break;
 
-                case 'nulled_email':
-                    $data = empty($data) ? null : strip_tags(trim((string)$data));
-                    if ($data) $data = filter_var($data, FILTER_VALIDATE_EMAIL) ? $data : null;
+                case 'email':
+                    $data = filter_var($data, FILTER_VALIDATE_EMAIL) ? $data : '';
                     break;
 
                 case 'slug':
@@ -332,9 +328,14 @@ class Helper
                     break;
 
                 default:
-                    $data = htmlentities(trim(strip_tags((string)$data)), ENT_QUOTES);
-                    if ($parameter === 'nulled_text')
-                        $data = empty($data) ? null : $data;
+                    $data = strip_tags(
+                        htmlspecialchars((string)$data)
+                    );
+                    break;
+            }
+
+            if ($nulled) {
+                $data = empty($data) ? null : $data;
             }
         }
 
@@ -414,13 +415,14 @@ class Helper
                         break;
 
                     case 'alpha':
-                        if (!ctype_alpha($value)) {
+                        // latin-ext supported 
+                        if (!ctype_alpha(self::slugGenerator($value))) {
                             $return[$name][] = self::lang('form.alpha_validation');
                         }
                         break;
 
                     case 'alphanumeric':
-                        if (!ctype_alnum($value)) {
+                        if (!ctype_alnum(self::slugGenerator($value))) {
                             $return[$name][] = self::lang('form.alphanumeric_validation');
                         }
                         break;
