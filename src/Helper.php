@@ -40,7 +40,7 @@ class Helper
     public static function path($dir = null, $createDir = false)
     {
 
-        $path = KX_ROOT;
+        $path = defined('KX_ROOT') ? KX_ROOT : $_SERVER['DOCUMENT_ROOT'] . '/';
         if ($dir) {
 
             $dir = trim($dir, '/');
