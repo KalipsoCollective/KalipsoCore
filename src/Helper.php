@@ -1380,6 +1380,8 @@ class Helper
 
         if (file_exists(self::path('app/Localization/' . $langKey . '.php')) !== false) {
             $kxLangParameters = require self::path('app/Localization/' . $langKey . '.php');
+
+            setlocale(LC_ALL, $kxLangParameters['lang']['iso_code'] . '.UTF-8', $kxLangParameters['lang']['iso_code'], $kxLangParameters['lang']['code']);
         }
         $kxLang = $langKey;
         $_SESSION['KX_LANG'] = $langKey;
