@@ -345,9 +345,10 @@ class Helper
     /**
      * Validation
      * @param  array $ruleSet
-     * @return array $return
+     * @param  object|null $response
+     * @return array|object $return
      */
-    public static function validation($ruleSet): array
+    public static function validation($ruleSet, $response = null): array|object
     {
 
         $return = [];
@@ -451,6 +452,31 @@ class Helper
                 unset($return[$name]);
             }
         }
+
+        if (!is_null($response) && !empty($return)) {
+            $r = [
+                'status' => false,
+                'notify' => [
+                    [
+                        'type' => 'error',
+                        'message' => self::lang('form.fill_all_fields')
+                    ]
+                ],
+                'dom' => []
+            ];
+            foreach ($return as $field => $messages) {
+                $r['dom']['[name="' . $field . '"]'] = [
+                    'addClass' => 'is-invalid',
+                ];
+
+                $r['dom']['[name="' . $field . '"] ~ .invalid-feedback'] = [
+                    'text' => implode(' ', $messages)
+                ];
+            }
+            $response->json($r);
+            exit;
+        }
+
         return $return;
     }
 
