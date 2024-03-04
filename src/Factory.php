@@ -28,6 +28,11 @@ final class Factory
     protected $defaultViewFolder;
     protected $errorPageContents;
 
+    protected $maintenanceMode = [
+        'excludedRoutes' => [],
+        'bypassEndpoint' => ''
+    ];
+
     /**
      * Constructor
      * @return object
@@ -343,7 +348,7 @@ final class Factory
      */
     public function run()
     {
-        global $kxVariables;
+        global $kxVariables, $kxLang;
 
         $this->checkIPBlock();
         $this->startRateLimit();
@@ -419,6 +424,29 @@ final class Factory
                         }
                     }
                 }
+            }
+
+            $maintenanceMode = Helper::config('settings.maintenance_mode', true);
+            if (
+                $maintenanceMode && (
+                    !Helper::authorization($this->maintenanceMode['bypassEndpoint']) &&
+                    in_array(
+                        $this->router->getRoute(),
+                        $this->maintenanceMode['excludedRoutes']
+                    ) === false
+                )
+            ) {
+                $desc = Helper::config('settings.maintenance_mode_desc');
+                $desc = json_decode(
+                    (string)$desc,
+                    true
+                );
+                $this->errorPage([
+                    'code' => 503,
+                    'title' => Helper::lang('base.maintenance_mode'),
+                    'description' => Helper::lang('base.maintenance_mode'),
+                    'subText' => $desc[$kxLang],
+                ]);
             }
 
             if ($next && isset($this->router->getRouteDetails()['controller']) !== false) {
@@ -693,7 +721,11 @@ final class Factory
     public function errorPage(string|int|array $statusCodeOrData)
     {
         if (is_array($statusCodeOrData)) {
-            $this->response->setStatus($statusCodeOrData['code']);
+            if (
+                is_numeric($statusCodeOrData['code'])
+            ) {
+                $this->response->setStatus($statusCodeOrData['code']);
+            }
             if ($this->defaultViewFolder) {
                 $this->response->render(
                     $this->defaultViewFolder . '/error',
@@ -703,7 +735,7 @@ final class Factory
             } else {
                 $this->response->send('<pre>' . $statusCodeOrData['description'] . '</pre>');
             }
-            return;
+            exit;
         } else {
             $statusCode = (string) $statusCodeOrData;
         }
@@ -774,5 +806,22 @@ final class Factory
         } else {
             $this->response->send('<pre>' . $pageData['description'] . '</pre>');
         }
+
+        exit;
+    }
+
+    /**
+     * Set maintenance mode
+     * @param array $excludedRoutes
+     * @param string|null $bypassEndpoint
+     * @return object
+     */
+    public function setMaintenanceMode(array $excludedRoutes, string $bypassEndpoint): object
+    {
+        $this->maintenanceMode = [
+            'excludedRoutes' => $excludedRoutes,
+            'bypassEndpoint' => $bypassEndpoint
+        ];
+        return $this;
     }
 }
