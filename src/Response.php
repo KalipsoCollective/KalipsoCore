@@ -47,6 +47,7 @@ final class Response
         503 => 'Service Unavailable'
     ];
     private $redirection = null;
+    private $excuted = false;
 
     /**
      * Response constructor
@@ -127,17 +128,20 @@ final class Response
      */
     public function send(string $body = ''): object
     {
-        if (!empty($body)) {
-            $this->setBody($body);
+        if (!$this->excuted) {
+            if (!empty($body)) {
+                $this->setBody($body);
+            }
+            ob_start();
+
+            $this->applyHeaders();
+
+            http_response_code($this->statusCode);
+
+            echo $this->responseBody;
+
+            $this->excuted = true;
         }
-        ob_start();
-
-        $this->applyHeaders();
-
-        http_response_code($this->statusCode);
-
-        echo $this->responseBody;
-
         return $this;
     }
 
