@@ -28,6 +28,8 @@ final class Factory
     protected $defaultViewFolder;
     protected $errorPageContents;
 
+    protected $logRecord = true;
+
     protected $maintenanceMode = [
         'excludedRoutes' => [],
         'bypassEndpoint' => ''
@@ -490,6 +492,10 @@ final class Factory
                     $log = false;
                 }
 
+                if (isset($this->logRecord) && $this->logRecord === false) {
+                    $log = false;
+                }
+
                 // log  
                 if ($log) {
 
@@ -806,8 +812,6 @@ final class Factory
         } else {
             $this->response->send('<pre>' . $pageData['description'] . '</pre>');
         }
-
-        exit;
     }
 
     /**
@@ -822,6 +826,17 @@ final class Factory
             'excludedRoutes' => $excludedRoutes,
             'bypassEndpoint' => $bypassEndpoint
         ];
+        return $this;
+    }
+
+    /**
+     * Set log record
+     * @param bool $logRecord
+     * @return object
+     */
+    public function setLogRecord(bool $logRecord): object
+    {
+        $this->logRecord = $logRecord;
         return $this;
     }
 }
