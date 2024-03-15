@@ -542,6 +542,13 @@ final class Factory
                 $this->response
             );
         }
+
+        /**
+         * Close session
+         **/
+        if (Helper::config('AUTH_STRATEGY') === 'session') {
+            session_write_close();
+        }
     }
 
     /**
