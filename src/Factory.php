@@ -138,7 +138,9 @@ final class Factory
             if (!empty($sessionName)) {
                 session_name((string) $sessionName);
             }
-            session_start();
+            session_start([
+                'read_and_close' => true,
+            ]);
         } else {
             /**
              * Set JWT secret
@@ -541,13 +543,6 @@ final class Factory
                 $this->request,
                 $this->response
             );
-        }
-
-        /**
-         * Close session
-         **/
-        if (Helper::config('AUTH_STRATEGY') === 'session') {
-            session_write_close();
         }
     }
 
