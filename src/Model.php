@@ -459,6 +459,45 @@ class Model extends Pdox
         $this->table($this->table);
     }
 
+    public function fetch($type = null, $argument = null, $all = false)
+    {
+        if (is_null($this->query)) {
+            return null;
+        }
+
+        if (!is_null($this->cache) && $type !== PDO::FETCH_CLASS) {
+            $cache = $this->cache->getCache($this->query, $type === PDO::FETCH_ASSOC);
+            if ($cache) {
+                $this->cache = null;
+                $this->numRows = is_array($cache) ? count($cache) : ($cache === '' ? 0 : 1);
+                return $all ? $cache : (isset($cache[0]) ? $cache[0] : $cache);
+            }
+        } else {
+            $this->cache = null;
+        }
+
+        $query = $this->pdo->query($this->query);
+        if (!$query) {
+            $this->error = $this->pdo->errorInfo()[2];
+            $this->error();
+        }
+
+        $type = $this->getFetchType($type);
+        if ($type === PDO::FETCH_CLASS) {
+            $query->setFetchMode($type, $argument);
+        } else {
+            $query->setFetchMode($type);
+        }
+
+        $result = $all ? $query->fetchAll() : $query->fetch();
+        $this->numRows = is_array($result) ? count($result) : 1;
+
+        if (!is_null($this->cache) && $type !== PDO::FETCH_CLASS) {
+            $this->cache->setCache($this->query, $result);
+        }
+        return $result;
+    }
+
     /**
      * cache
      * @param $time

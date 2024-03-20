@@ -28,6 +28,13 @@ final class Factory
     protected $defaultViewFolder;
     protected $errorPageContents;
 
+    protected $logRecord = true;
+
+    protected $maintenanceMode = [
+        'excludedRoutes' => [],
+        'bypassEndpoint' => ''
+    ];
+
     /**
      * Constructor
      * @return object
@@ -131,7 +138,9 @@ final class Factory
             if (!empty($sessionName)) {
                 session_name((string) $sessionName);
             }
-            session_start();
+            session_start([
+                'read_and_close' => true,
+            ]);
         } else {
             /**
              * Set JWT secret
@@ -343,7 +352,7 @@ final class Factory
      */
     public function run()
     {
-        global $kxVariables;
+        global $kxVariables, $kxLang;
 
         $this->checkIPBlock();
         $this->startRateLimit();
@@ -357,11 +366,11 @@ final class Factory
             $kxVariables = require Helper::path('app/External/variables.php');
         }
 
+        $redirect = false;
         if ($this->router->getRouteDetails()) {
 
             // apply middlewares
             $next = true;
-            $redirect = false;
 
             if (isset($this->router->getRouteDetails()['middlewares'])) {
                 foreach ($this->router->getRouteDetails()['middlewares'] as $m) {
@@ -421,6 +430,29 @@ final class Factory
                 }
             }
 
+            $maintenanceMode = Helper::config('settings.maintenance_mode', true);
+            if (
+                $maintenanceMode && (
+                    !Helper::authorization($this->maintenanceMode['bypassEndpoint']) &&
+                    in_array(
+                        $this->router->getRoute(),
+                        $this->maintenanceMode['excludedRoutes']
+                    ) === false
+                )
+            ) {
+                $desc = Helper::config('settings.maintenance_mode_desc');
+                $desc = json_decode(
+                    (string)$desc,
+                    true
+                );
+                $this->errorPage([
+                    'code' => 503,
+                    'title' => Helper::lang('base.maintenance_mode'),
+                    'description' => Helper::lang('base.maintenance_mode'),
+                    'subText' => $desc[$kxLang],
+                ]);
+            }
+
             if ($next && isset($this->router->getRouteDetails()['controller']) !== false) {
 
                 if ($this->router->getRouteDetails()['controller'] instanceof \Closure) {
@@ -448,33 +480,6 @@ final class Factory
                         $this
                     );
                 }
-
-                $logOption = Helper::config('LOG_LEVEL');
-                if ($logOption === 'debug') {
-                    $log = true;
-                } elseif ($logOption === 'error') {
-                    if ($this->response->getStatusCode() >= 400) {
-                        $log = true;
-                    } else {
-                        $log = false;
-                    }
-                } else {
-                    $log = false;
-                }
-
-                // log  
-                if ($log) {
-
-                    $log = new Log();
-                    $log->save(
-                        $this->request,
-                        $this->response
-                    );
-                }
-
-                if ($redirect) {
-                    $this->response->runRedirection();
-                }
             } else {
 
                 if ($this->router->methodNotAllowed) {
@@ -496,6 +501,48 @@ final class Factory
             $this->errorPage(405);
         } elseif ($notFound) {
             $this->errorPage(404);
+        }
+        // log
+        $this->saveLog();
+
+        if ($redirect) {
+            $this->response->runRedirection();
+        }
+    }
+
+    /**
+     * Log record
+     */
+    public function saveLog()
+    {
+        if (strpos($this->request->getUri(), '.map')) {
+            return;
+        }
+        $logOption = Helper::config('LOG_LEVEL');
+        if ($logOption === 'debug') {
+            $log = true;
+        } elseif ($logOption === 'error') {
+            if ($this->response->getStatusCode() >= 400) {
+                $log = true;
+            } else {
+                $log = false;
+            }
+        } else {
+            $log = false;
+        }
+
+        if (isset($this->logRecord) && $this->logRecord === false) {
+            $log = false;
+        }
+
+        // log  
+        if ($log) {
+
+            $log = new Log();
+            $log->save(
+                $this->request,
+                $this->response
+            );
         }
     }
 
@@ -692,8 +739,13 @@ final class Factory
      */
     public function errorPage(string|int|array $statusCodeOrData)
     {
+        $excuted = false;
         if (is_array($statusCodeOrData)) {
-            $this->response->setStatus($statusCodeOrData['code']);
+            if (
+                is_numeric($statusCodeOrData['code'])
+            ) {
+                $this->response->setStatus($statusCodeOrData['code']);
+            }
             if ($this->defaultViewFolder) {
                 $this->response->render(
                     $this->defaultViewFolder . '/error',
@@ -703,76 +755,103 @@ final class Factory
             } else {
                 $this->response->send('<pre>' . $statusCodeOrData['description'] . '</pre>');
             }
-            return;
+            $excuted = true;
         } else {
             $statusCode = (string) $statusCodeOrData;
         }
+        if (!$excuted) {
+            $defaultErrorPageContents = [
+                '400' => [
+                    'code' => 400,
+                    'title' => '400 - ' . Helper::lang('error.bad_request'),
+                    'description' => Helper::lang('error.bad_request'),
+                    'subText' => Helper::lang('error.bad_request_sub_text')
+                ],
+                '401' => [
+                    'code' => 401,
+                    'title' => '401 - ' . Helper::lang('error.unauthorized'),
+                    'description' => Helper::lang('error.unauthorized'),
+                    'subText' => Helper::lang('error.unauthorized_sub_text')
+                ],
+                '403' => [
+                    'code' => 403,
+                    'title' => '403 - ' . Helper::lang('error.forbidden'),
+                    'description' => Helper::lang('error.forbidden'),
+                    'subText' => Helper::lang('error.forbidden_sub_text')
+                ],
+                '404' => [
+                    'code' => 404,
+                    'title' => '404 - ' . Helper::lang('error.not_found'),
+                    'description' => Helper::lang('error.not_found'),
+                    'subText' => Helper::lang('error.not_found_sub_text'),
+                    'link' => [
+                        'text' => Helper::lang('base.back_to_home'),
+                        'url' => Helper::base()
+                    ]
+                ],
+                '405' => [
+                    'code' => 405,
+                    'title' => '405 - ' . Helper::lang('error.method_not_allowed'),
+                    'description' => Helper::lang('error.method_not_allowed'),
+                    'subText' => Helper::lang('error.method_not_allowed_sub_text')
+                ],
+                '500' => [
+                    'code' => 500,
+                    'title' => '500 - ' . Helper::lang('error.internal_server_error'),
+                    'description' => Helper::lang('error.internal_server_error'),
+                    'subText' => Helper::lang('error.internal_server_error_sub_text')
+                ],
+                '503' => [
+                    'code' => 503,
+                    'title' => '503 - ' . Helper::lang('error.service_unavailable'),
+                    'description' => Helper::lang('error.service_unavailable'),
+                    'subText' => Helper::lang('error.service_unavailable_sub_text')
+                ],
+            ];
+            $pageData = null;
+            if (isset($this->errorPageContents[$statusCode])) {
+                $pageData = $this->errorPageContents[$statusCode];
+            } else {
+                $pageData = $defaultErrorPageContents[$statusCode];
+            }
 
-        $defaultErrorPageContents = [
-            '400' => [
-                'code' => 400,
-                'title' => '400 - ' . Helper::lang('error.bad_request'),
-                'description' => Helper::lang('error.bad_request'),
-                'subText' => Helper::lang('error.bad_request_sub_text')
-            ],
-            '401' => [
-                'code' => 401,
-                'title' => '401 - ' . Helper::lang('error.unauthorized'),
-                'description' => Helper::lang('error.unauthorized'),
-                'subText' => Helper::lang('error.unauthorized_sub_text')
-            ],
-            '403' => [
-                'code' => 403,
-                'title' => '403 - ' . Helper::lang('error.forbidden'),
-                'description' => Helper::lang('error.forbidden'),
-                'subText' => Helper::lang('error.forbidden_sub_text')
-            ],
-            '404' => [
-                'code' => 404,
-                'title' => '404 - ' . Helper::lang('error.not_found'),
-                'description' => Helper::lang('error.not_found'),
-                'subText' => Helper::lang('error.not_found_sub_text'),
-                'link' => [
-                    'text' => Helper::lang('base.back_to_home'),
-                    'url' => Helper::base()
-                ]
-            ],
-            '405' => [
-                'code' => 405,
-                'title' => '405 - ' . Helper::lang('error.method_not_allowed'),
-                'description' => Helper::lang('error.method_not_allowed'),
-                'subText' => Helper::lang('error.method_not_allowed_sub_text')
-            ],
-            '500' => [
-                'code' => 500,
-                'title' => '500 - ' . Helper::lang('error.internal_server_error'),
-                'description' => Helper::lang('error.internal_server_error'),
-                'subText' => Helper::lang('error.internal_server_error_sub_text')
-            ],
-            '503' => [
-                'code' => 503,
-                'title' => '503 - ' . Helper::lang('error.service_unavailable'),
-                'description' => Helper::lang('error.service_unavailable'),
-                'subText' => Helper::lang('error.service_unavailable_sub_text')
-            ],
+            $this->response->setStatus($pageData['code']);
+
+            if ($this->defaultViewFolder) {
+                $this->response->render(
+                    $this->defaultViewFolder . '/error',
+                    $pageData,
+                    $this->defaultViewLayout ?? 'error'
+                );
+            } else {
+                $this->response->send('<pre>' . $pageData['description'] . '</pre>');
+            }
+        }
+    }
+
+    /**
+     * Set maintenance mode
+     * @param array $excludedRoutes
+     * @param string|null $bypassEndpoint
+     * @return object
+     */
+    public function setMaintenanceMode(array $excludedRoutes, string $bypassEndpoint): object
+    {
+        $this->maintenanceMode = [
+            'excludedRoutes' => $excludedRoutes,
+            'bypassEndpoint' => $bypassEndpoint
         ];
-        $pageData = null;
-        if (isset($this->errorPageContents[$statusCode])) {
-            $pageData = $this->errorPageContents[$statusCode];
-        } else {
-            $pageData = $defaultErrorPageContents[$statusCode];
-        }
+        return $this;
+    }
 
-        $this->response->setStatus($pageData['code']);
-
-        if ($this->defaultViewFolder) {
-            $this->response->render(
-                $this->defaultViewFolder . '/error',
-                $pageData,
-                $this->defaultViewLayout ?? 'error'
-            );
-        } else {
-            $this->response->send('<pre>' . $pageData['description'] . '</pre>');
-        }
+    /**
+     * Set log record
+     * @param bool $logRecord
+     * @return object
+     */
+    public function setLogRecord(bool $logRecord): object
+    {
+        $this->logRecord = $logRecord;
+        return $this;
     }
 }
