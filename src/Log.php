@@ -67,6 +67,7 @@ final class Log
                 $logModel->insert([
                     'endpoint' => $request->getUri(),
                     'status_code' => $response->getStatusCode(),
+                    'method' => $request->getRequestMethod(),
                     'auth_token' => Helper::authToken(),
                     'ip' => Helper::getIp(),
                     'header' => Helper::getUserAgent(),
