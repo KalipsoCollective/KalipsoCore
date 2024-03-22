@@ -175,11 +175,11 @@ final class Factory
         }
 
         $setLang = null;
-
-        // header X-Language
         $langSetted = false;
-        if (isset($_SERVER['HTTP_X_LANGUAGE']) !== false) {
-            $lang = $_SERVER['HTTP_X_LANGUAGE'];
+
+        // session
+        if (isset($_SESSION['KX_LANG']) !== false) {
+            $lang = $_SESSION['KX_LANG'];
             if (in_array($lang, $kxAvailableLanguages)) {
                 $langSetted = true;
                 $setLang = $lang;
@@ -195,9 +195,9 @@ final class Factory
             }
         }
 
-        // session
-        if (!$langSetted && isset($_SESSION['KX_LANG']) !== false) {
-            $lang = $_SESSION['KX_LANG'];
+        // header X-Language
+        if (!$langSetted && isset($_SERVER['HTTP_X_LANGUAGE']) !== false) {
+            $lang = $_SERVER['HTTP_X_LANGUAGE'];
             if (in_array($lang, $kxAvailableLanguages)) {
                 $langSetted = true;
                 $setLang = $lang;
