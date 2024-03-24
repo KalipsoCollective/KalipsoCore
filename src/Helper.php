@@ -1462,7 +1462,7 @@ class Helper
             }
         }
 
-        if ($section === 'user' && is_null($key)) {
+        if ($section === 'user' && is_null($key) && !empty($return)) {
             $return->name = !empty(trim($return->f_name . ' ' . $return->l_name)) ? trim($return->f_name . ' ' . $return->l_name) : $return->u_name;
         }
 
