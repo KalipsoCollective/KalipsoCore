@@ -372,14 +372,14 @@ final class Factory
             // apply middlewares
             $next = true;
 
+            $this->request->setRouteDetails(
+                $this->router->getRoute(),
+                $this->router->getRouteDetails(),
+                $this->router->getAttributes()
+            );
+
             if (isset($this->router->getRouteDetails()['middlewares'])) {
                 foreach ($this->router->getRouteDetails()['middlewares'] as $m) {
-
-                    $this->request->setRouteDetails(
-                        $this->router->getRoute(),
-                        $this->router->getRouteDetails(),
-                        $this->router->getAttributes()
-                    );
 
                     unset($middleware);
                     if ($m instanceof \Closure) {
