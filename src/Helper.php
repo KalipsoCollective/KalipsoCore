@@ -140,7 +140,7 @@ class Helper
     public static function config($setting, $format = false)
     {
 
-        global $kxConfigs;
+        global $kxConfigs, $kxLang;
 
         $return = false;
         $settings = false;
@@ -207,6 +207,18 @@ class Helper
                 default:
                     if (is_numeric($return)) {
                         $return = (float) $return;
+                    } elseif (is_string($return)) {
+                        try {
+                            $_return = json_decode($return);
+                            if ($_return) {
+                                $return = $_return;
+                                if (isset($return->{$kxLang}) !== false) {
+                                    $return = $return->{$kxLang};
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            $return = $return;
+                        }
                     }
             }
         }
