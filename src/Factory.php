@@ -175,45 +175,45 @@ final class Factory
         }
 
         $setLang = null;
-        $langSetted = false;
+
+        // default
+        $defaultLang = Helper::config('DEFAULT_LANGUAGE');
+        $currentLang = null;
 
         // session
         if (isset($_SESSION['KX_LANG']) !== false) {
             $lang = $_SESSION['KX_LANG'];
             if (in_array($lang, $kxAvailableLanguages)) {
-                $langSetted = true;
-                $setLang = $lang;
+                $currentLang = $lang;
             }
         }
 
         // get 
-        if (!$langSetted && isset($_GET['lang']) !== false) {
-            $lang = $_GET['lang'];
-            if (in_array($lang, $kxAvailableLanguages)) {
-                $langSetted = true;
-                $setLang = $lang;
-            }
+        if (isset($_GET['lang']) !== false && in_array($_GET['lang'], $kxAvailableLanguages)) {
+            $setLang = $_GET['lang'];
         }
 
         // header X-Language
-        if (!$langSetted && isset($_SERVER['HTTP_X_LANGUAGE']) !== false) {
-            $lang = $_SERVER['HTTP_X_LANGUAGE'];
-            if (in_array($lang, $kxAvailableLanguages)) {
-                $langSetted = true;
-                $setLang = $lang;
-            }
+        if (isset($_SERVER['HTTP_X_LANGUAGE']) !== false && in_array($_SERVER['HTTP_X_LANGUAGE'], $kxAvailableLanguages)) {
+            $setLang = $_SERVER['HTTP_X_LANGUAGE'];
         }
 
-        // default
-        $defaultLang = Helper::config('DEFAULT_LANGUAGE');
-        if (!$langSetted && !empty($defaultLang)) {
-            $setLang = $defaultLang;
+        // header X-Lang
+        if (isset($_SERVER['HTTP_X_LANG']) !== false && in_array($_SERVER['HTTP_X_LANG'], $kxAvailableLanguages)) {
+            $setLang = $_SERVER['HTTP_X_LANG'];
         }
 
         // set session
-        if ($setLang) {
-            Helper::setLang($setLang);
+        if (empty($setLang)) {
+            if (empty($currentLang)) {
+                $setLang = $defaultLang;
+            } else {
+                $setLang = $currentLang;
+            }
         }
+
+        Helper::setLang($setLang);
+
 
 
         /**
