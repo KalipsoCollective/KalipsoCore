@@ -138,9 +138,7 @@ final class Factory
             if (!empty($sessionName)) {
                 session_name((string) $sessionName);
             }
-            session_start([
-                'read_and_close' => true,
-            ]);
+            session_start();
         } else {
             /**
              * Set JWT secret
