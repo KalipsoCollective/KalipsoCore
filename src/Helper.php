@@ -1507,10 +1507,18 @@ class Helper
      */
     public static function firstLetters(string $text): string
     {
+        // transliterator
+        if (class_exists('Transliterator')) {
+            $text = \Transliterator::create("tr-Upper")
+                ->transliterate($text);
+        } else {
+            $text = mb_convert_case($text, MB_CASE_UPPER, 'UTF-8');
+        }
+
         $text = explode(' ', $text);
         $return = '';
         foreach ($text as $word) {
-            $return .= mb_strtoupper($word[0]);
+            $return .= mb_substr($word, 0, 1, 'UTF-8');
         }
         return $return;
     }
