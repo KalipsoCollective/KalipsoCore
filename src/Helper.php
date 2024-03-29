@@ -1463,6 +1463,7 @@ class Helper
     {
         global $kxSession;
 
+
         $return = null;
         if (is_null($section)) {
             $return = $kxSession;
@@ -1507,20 +1508,15 @@ class Helper
      */
     public static function firstLetters(string $text): string
     {
-        // transliterator
-        if (class_exists('Transliterator')) {
-            $text = \Transliterator::create("tr-Upper")
-                ->transliterate($text);
-        } else {
-            $text = mb_convert_case($text, MB_CASE_UPPER, 'UTF-8');
+
+        $text = mb_strtoupper($text, 'UTF-8');
+        $explode = explode(' ', $text);
+        $firstChars = '';
+        foreach ($explode as $v) {
+            $firstChars .= mb_substr($v, 0, 1, 'UTF-8');
         }
 
-        $text = explode(' ', $text);
-        $return = '';
-        foreach ($text as $word) {
-            $return .= mb_substr($word, 0, 1, 'UTF-8');
-        }
-        return $return;
+        return $firstChars;
     }
 
     /**
