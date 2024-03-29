@@ -1508,7 +1508,6 @@ class Helper
      */
     public static function firstLetters(string $text): string
     {
-
         $text = mb_strtoupper($text, 'UTF-8');
         $explode = explode(' ', $text);
         $firstChars = '';
