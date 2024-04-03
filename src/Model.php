@@ -203,7 +203,7 @@ class Model extends Pdox
 
         // columns
         foreach ($this->schema->columns as $columnName => $column) {
-            $query .= ' `' . $columnName . '` ' . strtolower($column->type);
+            $query .= ' `' . $columnName . '` ' . mb_strtolower($column->type);
 
             if (isset($column->length)) {
                 $query .= '(' . $column->length . ')';
@@ -238,7 +238,7 @@ class Model extends Pdox
         if (isset($this->schema->indexes)) {
             foreach ($this->schema->indexes as $indexName => $index) {
 
-                $index->type = strtoupper($index->type);
+                $index->type = mb_strtoupper($index->type);
                 $query .= ' ' . $index->type . ($index->type === 'FULLTEXT' ? ' INDEX' : '') . (in_array($index->type, ['PRIMARY', 'UNIQUE']) ? ' KEY ' : ' ') . '`' . $indexName . '` (' . implode(', ', $index->columns) . '),' . PHP_EOL;
             }
         }
