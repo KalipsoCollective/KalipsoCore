@@ -449,6 +449,7 @@ final class Factory
                     'description' => Helper::lang('base.maintenance_mode'),
                     'subText' => $desc[$kxLang],
                 ]);
+                exit;
             }
 
             if ($next && isset($this->router->getRouteDetails()['controller']) !== false) {
