@@ -1,36 +1,42 @@
 {
-    "name": "kx/core",
-    "version": "1.0.0",
-    "type": "library",
-    "description": "KalipsoX Core - Hearth of KalipsoX Framework",
-    "keywords": ["framework", "kalipso", "kalipsox", "php-framework", "core"],
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "KalipsoCollective",
-            "email": "hello@koalapix.com",
-            "homepage": "https://koalapix.com"
-        }
-    ],
-    "require": {
-        "php": "^7.1|^8.0",
-        "ext-pdo": "*",
-        "ext-json": "*",
-        "ext-redis": "*",
-        "izniburak/pdox": "^1.6",
-        "phpmailer/phpmailer": "^6.7",
-        "verot/class.upload.php": "^2.1"
-    },
-    "autoload": {
-        "psr-4": {
-            "KX\\Core\\": "src"
-        }
-    },
-    "config": {
-        "optimize-autoloader": true,
-        "preferred-install": "dist",
-        "sort-packages": true
-    },
-    "minimum-stability": "beta",
-    "prefer-stable": true
+  "name": "kx/core",
+  "version": "1.0.1",
+  "type": "library",
+  "description": "KalipsoX Core - Hearth of KalipsoX Framework",
+  "keywords": [
+    "framework",
+    "kalipso",
+    "kalipsox",
+    "php-framework",
+    "core"
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "KalipsoCollective",
+      "email": "hello@koalapix.com",
+      "homepage": "https://koalapix.com"
+    }
+  ],
+  "require": {
+    "php": "^7.1|^8.0",
+    "ext-pdo": "*",
+    "ext-json": "*",
+    "ext-redis": "*",
+    "izniburak/pdox": "^1.6",
+    "phpmailer/phpmailer": "^6.7",
+    "verot/class.upload.php": "^2.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "KX\\Core\\": "src"
+    }
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "preferred-install": "dist",
+    "sort-packages": true
+  },
+  "minimum-stability": "beta",
+  "prefer-stable": true
 }
